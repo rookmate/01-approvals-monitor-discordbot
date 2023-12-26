@@ -1,0 +1,11 @@
+{
+  "name": "permissionsbot",
+  "version": "1.0.0",
+  "description": "A bot to monitor user wallet permissions",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "rookmate",
+  "license": "MIT"
+}
