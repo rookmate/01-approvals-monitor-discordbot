@@ -28,7 +28,7 @@ module.exports = {
         )
         .addStringOption(option =>
             option
-                .setName('signature')
+                .setName('signature-hash')
                 .setDescription('Signature proving wallet is theirs')
         ),
 
@@ -75,14 +75,13 @@ module.exports = {
         }
 
         const messageToSign = `Verification for NFT ownership for wallet address ${userAddress}.`;
-        const userSig = interaction.options.getString('signature');
+        const userSig = interaction.options.getString('signature-hash');
         if (userSig === null) {
             console.log(`Address ${userAddress} owns ${userOwnedNFTs["total"]} NFTs. ${interaction.user.username} needs to prove it owns the NFTs in the address.`);
-            interaction.reply({ content: `Please sign the following message with your Ethereum private key:\n\n\`${messageToSign}\`\n\nRun this command again filling in the \`signature\` field`, ephemeral: true});
-        }
-        else {
-            console.log(`Sig provided continue dev`);
-            const recoveredAddress = await recoverMessageAddress({ message: messageToSign, userSig });
+            interaction.reply({ content: `Please sign the following message and then run this command again filling in the \`signature\` field.\n\n\`${messageToSign}\`\n\nYou can sign a message with [Etherscan](https://etherscan.io/verifiedSignatures) or similar.`, ephemeral: true});
+        } else {
+            console.log(`Validating address signature`);
+            const recoveredAddress = await recoverMessageAddress({ message: messageToSign, signature: userSig });
             if (isAddressEqual(recoveredAddress, userAddress)) {
                 //TODO: console.log(`Adding wallet to alert system`);
                 await interaction.reply({ content: `Successfully added wallet ${userAddress}`, ephemeral: true});
