@@ -11,6 +11,7 @@
   "dependencies": {
     "discord.js": "^14.14.1",
     "dotenv": "^16.3.1",
+    "sqlite3": "^5.1.7-rc.0",
     "viem": "^1.21.1"
   }
 }
