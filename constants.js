@@ -1,3 +1,5 @@
+exports.DB_PATH = "db/users.db"
+
 exports.ALLOWED_ROLES = {
     "101": "1002181020189204511",
     "102": "1015217293594214491",
