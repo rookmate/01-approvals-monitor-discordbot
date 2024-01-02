@@ -1,9 +1,11 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { ALLOWED_ROLES, ALLOWED_NFTS } = require("../../constants.js");
+const { DB_PATH, ALLOWED_ROLES, ALLOWED_NFTS } = require("../../constants.js");
 require('dotenv').config();
 const { isAddress, createPublicClient, http, recoverMessageAddress, isAddressEqual } = require('viem');
 const { mainnet, polygon } = require('viem/chains');
 const fs = require("fs");
+const sqlite3 = require('sqlite3');
+const path = require('path');
 
 function isValidEthereumAddress(address) {
   // Check if the address matches the Ethereum address format
@@ -14,6 +16,30 @@ function isValidEthereumAddress(address) {
 
   // Check if the address is a valid checksum address
   return isAddress(address);
+}
+
+async function checkAddress(interaction, dbFilePath, userAddress) {
+  return new Promise((resolve, reject) => {
+    const db = new sqlite3.Database(dbFilePath);
+    db.all('SELECT address FROM users WHERE address LIKE ?', [userAddress], (err, rows) => {
+      if (err) {
+        interaction.reply({ content: 'Internal DB error. Please reach out to a moderator.', ephemeral: true });
+        console.error(err.message);
+        reject(err);
+      }
+
+      //TODO: SHOULD I KEEP THIS HERE OR ON THE DAILY CHECKS?
+      if (rows.length > 1) {
+        reject(new Error('Multiple users with the same wallet.'));
+      }
+
+      if (rows.length !== 0) {
+        reject(new Error('Wallet already registered. Please register another wallet'));
+      }
+
+      resolve();
+    });
+  });
 }
 
 module.exports = {
@@ -49,7 +75,17 @@ module.exports = {
       return;
     }
 
-    // TODO: ADD VALIDATION IF WALLET ALREADY EXISTS ON THE DATABASE AND RETURN IF IT DOES
+    console.log(`Checking if address already exists in the database`);
+    const dbFilePath = path.join(process.cwd(), DB_PATH);
+    try {
+      await checkAddress(interaction, dbFilePath, userAddress);
+    } catch (error) {
+      // Handle errors from the checkAddress function
+      console.error('Error during checkAddress:', error.message);
+      interaction.reply({ content: 'Wallet already registered. Please register another wallet', ephemeral: true });
+      return;
+    }
+
     console.log(`Checking if wallet provided contains the allowed NFTs`);
     let userOwnedNFTs = { "total": 0n };
     for (const nft of ALLOWED_NFTS) {
@@ -84,10 +120,21 @@ module.exports = {
       console.log(`Validating address signature`);
       const recoveredAddress = await recoverMessageAddress({ message: messageToSign, signature: userSig });
       if (isAddressEqual(recoveredAddress, userAddress)) {
-        //TODO: console.log(`Adding wallet to alert system`);
-        await interaction.reply({ content: `Successfully added wallet ${userAddress}`, ephemeral: true});
+        console.log(`Adding wallet to alert system`);
+        const db = new sqlite3.Database(dbFilePath);
+
+        db.serialize(() => {
+          const stmt = db.prepare('INSERT INTO users (discord_id, address, allowed_nfts) VALUES (?, ?, ?)');
+          stmt.run(interaction.user.id, userAddress, userOwnedNFTs);
+          stmt.finalize();
+
+          db.close();
+        });
+
+        await interaction.reply({ content: `Successfully added wallet ${userAddress} to monitoring service!`, ephemeral: true});
       } else {
         interaction.reply({ content: 'Error verifying NFT ownership.', ephemeral: true});
+        return;
       }
     }
   },
