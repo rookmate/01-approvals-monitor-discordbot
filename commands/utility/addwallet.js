@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { DB_PATH, ALLOWED_ROLES, ALLOWED_NFTS } = require("../../constants.js");
 require('dotenv').config();
-const { isAddress, createPublicClient, http, recoverMessageAddress, isAddressEqual } = require('viem');
+const { isAddress, createPublicClient, http, verifyMessage } = require('viem');
 const { mainnet, polygon } = require('viem/chains');
 const fs = require("fs");
 const sqlite3 = require('sqlite3');
@@ -80,8 +80,7 @@ module.exports = {
     try {
       await checkAddress(interaction, dbFilePath, userAddress);
     } catch (error) {
-      // Handle errors from the checkAddress function
-      console.error('Error during checkAddress:', error.message);
+      console.error('checkAddress:', error.message);
       interaction.reply({ content: 'Wallet already registered. Please register another wallet', ephemeral: true });
       return;
     }
@@ -118,8 +117,8 @@ module.exports = {
       interaction.reply({ content: `Please sign the following message and then run this command again filling in the \`signature\` field.\n\n\`${messageToSign}\`\n\nYou can sign a message with [Etherscan](https://etherscan.io/verifiedSignatures) or similar.`, ephemeral: true});
     } else {
       console.log(`Validating address signature`);
-      const recoveredAddress = await recoverMessageAddress({ message: messageToSign, signature: userSig });
-      if (isAddressEqual(recoveredAddress, userAddress)) {
+      const isUserAddress = await verifyMessage({ address: userAddress, message: messageToSign, signature: userSig });
+      if (isUserAddress) {
         console.log(`Adding wallet to alert system`);
         const db = new sqlite3.Database(dbFilePath);
 
@@ -134,6 +133,7 @@ module.exports = {
         await interaction.reply({ content: `Successfully added wallet ${userAddress} to monitoring service!`, ephemeral: true});
       } else {
         interaction.reply({ content: 'Error verifying NFT ownership.', ephemeral: true});
+        console.log('Error verifying NFT ownership.');
         return;
       }
     }

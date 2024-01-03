@@ -29,13 +29,14 @@ for (const folder of commandFolders) {
 client.once(Events.ClientReady, readyClient => {
   const dbFilePath = path.join(process.cwd(), DB_PATH);
   if (!fs.existsSync(dbFilePath)) {
-    console.log(`Database created!`);
     const db = new sqlite3.Database(dbFilePath);
 
     db.serialize(() => {
       db.run('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, discord_id TEXT, address TEXT, allowed_nfts TEXT)');
       db.close();
     });
+
+    console.log(`Database created!`);
   }
 
   console.log(`Ready! Logged in as ${readyClient.user.tag}`);
