@@ -54,9 +54,9 @@ module.exports = {
         console.error(err.message);
       } else {
         if (this.changes == 0) {
-          interaction.reply({ content: `Did not find user wallet ${userAddress}.`, ephemeral: true });
+          interaction.reply({ content: `No matching records found for \`${userAddress}\`.`, ephemeral: true });
         } else {
-          interaction.reply({ content: `Successfully removed wallet ${userAddress} to monitoring service!`, ephemeral: true});
+          interaction.reply({ content: `Successfully removed wallet \`${userAddress}\` to monitoring service!`, ephemeral: true});
         }
       }
     });

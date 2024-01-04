@@ -129,9 +129,9 @@ module.exports = {
           db.close();
         });
 
-        await interaction.reply({ content: `Successfully added wallet ${userAddress} to monitoring service!`, ephemeral: true});
+        await interaction.reply({ content: `Successfully added wallet \`${userAddress}\` to monitoring service!`, ephemeral: true});
       } else {
-        interaction.reply({ content: `NFT ownership verification failed. Ensure your signature has starts with 0x or that you own the wallet you're trying to add`, ephemeral: true});
+        interaction.reply({ content: `NFT ownership verification failed. Ensure your signature has starts with \`0x\` or that you own the wallet you're trying to add`, ephemeral: true});
         return;
       }
     }
