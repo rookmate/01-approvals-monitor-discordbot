@@ -45,7 +45,7 @@ async function checkAddress(interaction, dbFilePath, userAddress) {
 module.exports = {
   data: new SlashCommandBuilder()
   .setName('addwallet')
-  .setDescription('Allows the user to add a user controlled wallet to the Aprovals Monitor. The bot will alert for open approvals on user wallets')
+  .setDescription('Allows the user to add a user controlled wallet to the Aprovals Monitor.')
   .addStringOption(option =>
     option
     .setName('address')
@@ -112,8 +112,7 @@ module.exports = {
     const messageToSign = `Verification for NFT ownership for wallet address ${userAddress}.`;
     const userSig = interaction.options.getString('signature-hash');
     if (userSig === null) {
-      console.log(`Address ${userAddress} owns ${userOwnedNFTs["total"]} NFTs.`);
-      console.log(`${interaction.user.username} needs to prove it owns the NFTs in the address.`);
+      console.log(`Address ${userAddress} owns ${userOwnedNFTs["total"]} allowed NFTs.`);
       interaction.reply({ content: `Please sign the following message and then run this command again filling in the \`signature\` field.\n\n\`${messageToSign}\`\n\nYou can sign a message with [Etherscan](https://etherscan.io/verifiedSignatures) or similar.`, ephemeral: true});
     } else {
       console.log(`Validating address signature`);
@@ -132,8 +131,7 @@ module.exports = {
 
         await interaction.reply({ content: `Successfully added wallet ${userAddress} to monitoring service!`, ephemeral: true});
       } else {
-        interaction.reply({ content: 'Error verifying NFT ownership.', ephemeral: true});
-        console.log('Error verifying NFT ownership.');
+        interaction.reply({ content: `NFT ownership verification failed. Ensure your signature has starts with 0x or that you own the wallet you're trying to add`, ephemeral: true});
         return;
       }
     }
