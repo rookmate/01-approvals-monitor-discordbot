@@ -45,7 +45,7 @@ async function checkAddress(interaction, dbFilePath, userAddress) {
 module.exports = {
   data: new SlashCommandBuilder()
   .setName('addwallet')
-  .setDescription('Allows the user to add a wallet that is suitable for the bot to alert open approvals')
+  .setDescription('Allows the user to add a user controlled wallet to the Aprovals Monitor. The bot will alert for open approvals on user wallets')
   .addStringOption(option =>
     option
     .setName('address')
