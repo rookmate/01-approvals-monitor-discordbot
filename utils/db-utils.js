@@ -44,4 +44,41 @@ async function dbAddressInsert(interaction, userAddress, userOwnedNFTs) {
   });
 }
 
-module.exports = { dbAddressExists, dbAddressInsert };
+async function dbListUserAddresses(interaction) {
+  return new Promise((resolve, reject) => {
+    const db = new sqlite3.Database(dbFilePath);
+    let wallets = [];
+
+    db.each('SELECT address FROM users WHERE discord_id = ?', [interaction.user.id], (err, row) => {
+      if (err) {
+        reject(err);
+        db.close();
+        return;
+      }
+
+      wallets.push(row.address);
+    }, (err, rowCount) => {
+      if (err) {
+        reject(err);
+        db.close();
+        return;
+      }
+
+      if (rowCount === 0) {
+        resolve({ content: `No matching records found`, ephemeral: true });
+      } else {
+        const prepMessage = wallets.map(row => `- \`${row}\``);
+        const message = `Monitoring:\n${prepMessage.join('\n')}`;
+        resolve({ content: message, ephemeral: true });
+      }
+
+      db.close((closeErr) => {
+        if (closeErr) {
+          console.error('Error closing database connection:', closeErr.message);
+        }
+      });
+    });
+  });
+}
+
+module.exports = { dbAddressExists, dbAddressInsert, dbListUserAddresses };
