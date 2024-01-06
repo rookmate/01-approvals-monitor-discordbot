@@ -1,3 +1,6 @@
+exports.GUILD_ID = "1023204692769112065"
+exports.APP_ID = "1189325406822748251"
+
 exports.DB_PATH = "db/users.db"
 
 exports.ALLOWED_ROLES = {
