@@ -3,7 +3,7 @@ require('dotenv').config();
 const constants = require("./constants");
 const cmdParser = require("./command-parser");
 
-const commands = cmdParser('deploy');
+const commands = cmdParser('deploy', []);
 
 const rest = new REST().setToken(process.env.DISCORD_TOKEN);
 (async () => {

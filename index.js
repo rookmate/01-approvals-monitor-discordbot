@@ -4,22 +4,11 @@ const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 require('dotenv').config();
 const sqlite3 = require('sqlite3');
 const { DB_PATH } = require("./utils/constants.js");
-
+const cmdParser = require("./utils/command-parser.js");
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
-
 client.commands = new Collection();
-const commandsPath = './commands';
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-// Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment
-for (const file of commandFiles) {
-  const command = require(`${commandsPath}/${file}`);
-  if ('data' in command && 'execute' in command) {
-    client.commands.set(command.data.name, command);
-  } else {
-    console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
-  }
-}
+client.commands = cmdParser('set', client.commands);
 
 client.once(Events.ClientReady, readyClient => {
   const dbFilePath = path.join(process.cwd(), DB_PATH);
