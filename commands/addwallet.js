@@ -1,9 +1,9 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { ALLOWED_ROLES, ALLOWED_NFTS } = require("../utils/constants");
+const { dbAddressExists, dbAddressInsert } = require('../utils/db-utils');
 require('dotenv').config();
 const { isAddress, createPublicClient, http, verifyMessage } = require('viem');
 const { mainnet, polygon } = require('viem/chains');
-const { dbAddressExists, dbAddressInsert } = require('../utils/db-utils');
 
 function isValidEthereumAddress(address) {
   // Check if the address matches the Ethereum address format
@@ -51,7 +51,7 @@ module.exports = {
 
     console.log(`Checking if address already exists in the database`);
     try {
-      await dbAddressExists(interaction, userAddress);
+      await dbAddressExists(userAddress);
     } catch (error) {
       console.error('dbAddressExists:', error.message);
       interaction.reply({ content: error.message, ephemeral: true });
@@ -93,11 +93,12 @@ module.exports = {
       if (isUserAddress) {
         console.log(`Adding wallet to alert system`);
         try {
-          await dbAddressInsert(interaction, 'userAddress', 'userOwnedNFTs');
-          await interaction.reply({ content: `Successfully added wallet \`${userAddress}\` to monitoring service!`, ephemeral: true});
+          const result = await dbAddressInsert(interaction, userAddress, userOwnedNFTs);
+          await interaction.reply(result);
         } catch (error) {
-          interaction.reply({ content: 'Internal DB error. Please reach out to a moderator.', ephemeral: true });
-          console.error(error.message);
+          console.error('dbAddressInsert:', error.message);
+          interaction.reply({ content: error.message, ephemeral: true });
+          return;
         }
       } else {
         interaction.reply({ content: `NFT ownership verification failed. Ensure your signature has starts with \`0x\` or that you own the wallet you're trying to add`, ephemeral: true});

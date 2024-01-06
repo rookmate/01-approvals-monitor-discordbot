@@ -23,8 +23,7 @@ module.exports = {
       const result = await dbListUserAddresses(interaction);
       interaction.reply(result);
     } catch (error) {
-      interaction.reply({ content: 'Internal DB error. Please reach out to a moderator.', ephemeral: true });
-      console.error(error.message);
+      interaction.reply(error);
     }
   },
 };

@@ -1,10 +1,8 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { DB_PATH, ALLOWED_ROLES } = require("../utils/constants.js");
+const { ALLOWED_ROLES } = require('../utils/constants');
+const { dbAddressDelete } = require('../utils/db-utils');
 require('dotenv').config();
 const { isAddress } = require('viem');
-const fs = require("fs");
-const sqlite3 = require('sqlite3');
-const path = require('path');
 
 function isValidEthereumAddress(address) {
   // Check if the address matches the Ethereum address format
@@ -46,21 +44,12 @@ module.exports = {
     }
 
     console.log(`Removing address from the database`);
-    const dbFilePath = path.join(process.cwd(), DB_PATH);
-    const db = new sqlite3.Database(dbFilePath);
-    db.run('DELETE FROM users WHERE address = ? AND discord_id = ?', [userAddress, interaction.user.id], function(err) {
-      if (err) {
-        interaction.reply({ content: 'Internal DB error. Please reach out to a moderator.', ephemeral: true });
-        console.error(err.message);
-      } else {
-        if (this.changes == 0) {
-          interaction.reply({ content: `No matching records found for \`${userAddress}\`.`, ephemeral: true });
-        } else {
-          interaction.reply({ content: `Successfully removed wallet \`${userAddress}\` to monitoring service!`, ephemeral: true});
-        }
-      }
-    });
-
-    db.close();
+    try {
+      const result = await dbAddressDelete(interaction, userAddress);
+      interaction.reply(result);
+    } catch (error) {
+      console.error('dbAddressDelete:', error.message);
+      interaction.reply({ content: error.message, ephemeral: true });
+    }
   },
 };

@@ -4,15 +4,14 @@ const { DB_PATH } = require("../utils/constants");
 
 const dbFilePath = path.join(process.cwd(), DB_PATH);
 
-async function dbAddressExists(interaction, userAddress) {
+async function dbAddressExists(userAddress) {
   return new Promise((resolve, reject) => {
     const db = new sqlite3.Database(dbFilePath);
     db.all('SELECT address FROM users WHERE address LIKE ?', [userAddress], (err, rows) => {
       try {
         if (err) {
-          interaction.reply({ content: 'Internal DB error. Please reach out to a moderator.', ephemeral: true });
           console.error(err.message);
-          reject(err);
+          reject(new Error('Internal DB error. Please reach out to a moderator.'));
         }
 
         //TODO: SHOULD I KEEP THIS HERE OR ON THE DAILY CHECKS?
@@ -42,14 +41,15 @@ async function dbAddressInsert(interaction, userAddress, userOwnedNFTs) {
 
       if (err) {
         db.close();
-        reject(err);
+        console.error(err.message);
+        reject(new Error('Internal DB error. Please reach out to a moderator.'));
       } else {
         db.close((closeErr) => {
           if (closeErr) {
             console.error('Error closing database connection:', closeErr.message);
           }
         });
-        resolve();
+        resolve({ content: `Successfully added wallet \`${userAddress}\` to monitoring service!`, ephemeral: true});
       }
     });
   });
@@ -62,7 +62,8 @@ async function dbListUserAddresses(interaction) {
 
     db.each('SELECT address FROM users WHERE discord_id = ?', [interaction.user.id], (err, row) => {
       if (err) {
-        reject(err);
+        reject(new Error('Internal DB error. Please reach out to a moderator.'));
+        console.error(err.message);
         db.close();
         return;
       }
@@ -70,7 +71,8 @@ async function dbListUserAddresses(interaction) {
       wallets.push(row.address);
     }, (err, rowCount) => {
       if (err) {
-        reject(err);
+        reject(new Error('Internal DB error. Please reach out to a moderator.'));
+        console.error(err.message);
         db.close();
         return;
       }
@@ -86,10 +88,41 @@ async function dbListUserAddresses(interaction) {
       db.close((closeErr) => {
         if (closeErr) {
           console.error('Error closing database connection:', closeErr.message);
+          reject(new Error('Internal DB error. Please reach out to a moderator.'));
         }
       });
     });
   });
 }
 
-module.exports = { dbAddressExists, dbAddressInsert, dbListUserAddresses };
+async function dbAddressDelete(interaction, userAddress) {
+  return new Promise((resolve, reject) => {
+    const dbFilePath = path.join(process.cwd(), DB_PATH);
+    const db = new sqlite3.Database(dbFilePath);
+
+    db.run('DELETE FROM users WHERE address = ? AND discord_id = ?', [userAddress, interaction.user.id], function (err) {
+      if (err) {
+        console.error(err.message);
+        db.close();
+        reject(new Error('Internal DB error. Please reach out to a moderator.'));
+      } else {
+        if (this.changes === 0) {
+          resolve({ content: `No matching records found for \`${userAddress}\`.`, ephemeral: true });
+        } else {
+          resolve({ content: `Successfully removed wallet \`${userAddress}\` from monitoring service!`, ephemeral: true });
+        }
+
+        db.close((closeErr) => {
+          if (closeErr) {
+            console.error('Error closing database connection:', closeErr.message);
+            reject(new Error('Internal DB error. Please reach out to a moderator.'));
+          }
+        });
+
+        resolve({ content: `Successfully removed wallet \`${userAddress}\` from monitoring service!`, ephemeral: true });
+      }
+    });
+  });
+}
+
+module.exports = { dbAddressExists, dbAddressInsert, dbListUserAddresses, dbAddressDelete };
