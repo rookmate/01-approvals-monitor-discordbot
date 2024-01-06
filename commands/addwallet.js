@@ -1,20 +1,9 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { ALLOWED_ROLES, ALLOWED_NFTS } = require("../utils/constants");
+const { ALLOWED_ROLES } = require("../utils/constants");
 const { dbAddressExists, dbAddressInsert } = require('../utils/db-utils');
+const { isValidEthereumAddress, getUserOwnedAllowedNFTs } = require('../utils/wallet-utils');
 require('dotenv').config();
-const { isAddress, createPublicClient, http, verifyMessage } = require('viem');
-const { mainnet, polygon } = require('viem/chains');
-
-function isValidEthereumAddress(address) {
-  // Check if the address matches the Ethereum address format
-  const addressRegex = /^(0x)?[0-9a-fA-F]{40}$/;
-  if (!addressRegex.test(address)) {
-    return false;
-  }
-
-  // Check if the address is a valid checksum address
-  return isAddress(address);
-}
+const { verifyMessage } = require('viem');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -59,51 +48,42 @@ module.exports = {
     }
 
     console.log(`Checking if wallet provided contains the allowed NFTs`);
-    let userOwnedNFTs = { "total": 0n };
-    for (const nft of ALLOWED_NFTS) {
-      let _clientChainData;
-      if (nft.chain === "ethereum") {
-        _clientChainData = { chain: mainnet, transport: http(`https://eth-mainnet.g.alchemy.com/v2/${process.env.ETH_ALCHEMY_KEY}`), };
-      }
-
-      if (nft.chain === "polygon"){
-        _clientChainData = { chain: polygon, transport: http(`https://polygon-mainnet.g.alchemy.com/v2/${process.env.POLYGON_ALCHEMY_KEY}`), };
-      }
-
-      const client = createPublicClient(_clientChainData)
-      try {
-        const balance = await client.readContract({ ...nft, functionName: 'balanceOf', args: [userAddress, nft.tokenID], });
-        userOwnedNFTs[nft.name] = balance;
-        userOwnedNFTs["total"] += balance;
-      } catch (error) {
-        await interaction.reply({content: `Could not retrieve data from RPC. Please reach out to a moderator.`, ephemeral: true});
-        console.error('Error:', error);
+    let userOwnedNFTs;
+    try {
+      userOwnedNFTs = await getUserOwnedAllowedNFTs(userAddress)
+      if (userOwnedNFTs["total"] === 0n) {
+        await interaction.reply({ content: `\`${userAddress}\` does not contain the relevant NFTs`, ephemeral: true });
         return;
       }
+    } catch (error) {
+        console.error('getUserOwnedAllowedNFTs:', error.message);
+        await interaction.reply({ content: error.message, ephemeral: true });
+        return;
     }
 
+    console.log(`Validating address signature`);
     const messageToSign = `Verification for NFT ownership for wallet address ${userAddress}.`;
     const userSig = interaction.options.getString('signature-hash');
     if (userSig === null) {
       console.log(`Address ${userAddress} owns ${userOwnedNFTs["total"]} allowed NFTs.`);
       interaction.reply({ content: `Please sign the following message and then run this command again filling in the \`signature\` field.\n\n\`${messageToSign}\`\n\nYou can sign a message with [Etherscan](https://etherscan.io/verifiedSignatures) or similar.`, ephemeral: true});
-    } else {
-      console.log(`Validating address signature`);
-      const isUserAddress = await verifyMessage({ address: userAddress, message: messageToSign, signature: userSig });
-      if (isUserAddress) {
-        console.log(`Adding wallet to alert system`);
-        try {
-          const result = await dbAddressInsert(interaction, userAddress, userOwnedNFTs);
-          await interaction.reply(result);
-        } catch (error) {
-          console.error('dbAddressInsert:', error.message);
-          interaction.reply({ content: error.message, ephemeral: true });
-          return;
-        }
-      } else {
-        interaction.reply({ content: `NFT ownership verification failed. Ensure your signature has starts with \`0x\` or that you own the wallet you're trying to add`, ephemeral: true});
+      return;
+    }
+
+    const isUserAddress = await verifyMessage({ address: userAddress, message: messageToSign, signature: userSig });
+    if (isUserAddress) {
+      console.log(`Adding wallet to alert system`);
+      try {
+        const result = await dbAddressInsert(interaction, userAddress, userOwnedNFTs);
+        await interaction.reply(result);
+      } catch (error) {
+        console.error('dbAddressInsert:', error.message);
+        interaction.reply({ content: error.message, ephemeral: true });
         return;
       }
+    } else {
+      interaction.reply({ content: `NFT ownership verification failed. Ensure your signature has starts with \`0x\` or that you own the wallet you're trying to add`, ephemeral: true});
+      return;
     }
   },
 };

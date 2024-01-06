@@ -1,19 +1,8 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { ALLOWED_ROLES } = require('../utils/constants');
 const { dbAddressDelete } = require('../utils/db-utils');
+const { isValidEthereumAddress } = require('../utils/wallet-utils');
 require('dotenv').config();
-const { isAddress } = require('viem');
-
-function isValidEthereumAddress(address) {
-  // Check if the address matches the Ethereum address format
-  const addressRegex = /^(0x)?[0-9a-fA-F]{40}$/;
-  if (!addressRegex.test(address)) {
-    return false;
-  }
-
-  // Check if the address is a valid checksum address
-  return isAddress(address);
-}
 
 module.exports = {
   data: new SlashCommandBuilder()
