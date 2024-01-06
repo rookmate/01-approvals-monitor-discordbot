@@ -92,9 +92,13 @@ module.exports = {
       const isUserAddress = await verifyMessage({ address: userAddress, message: messageToSign, signature: userSig });
       if (isUserAddress) {
         console.log(`Adding wallet to alert system`);
-        dbAddressInsert(interaction, userAddress, userOwnedNFTs)
-
-        await interaction.reply({ content: `Successfully added wallet \`${userAddress}\` to monitoring service!`, ephemeral: true});
+        try {
+          await dbAddressInsert(interaction, 'userAddress', 'userOwnedNFTs');
+          await interaction.reply({ content: `Successfully added wallet \`${userAddress}\` to monitoring service!`, ephemeral: true});
+        } catch (error) {
+          interaction.reply({ content: 'Internal DB error. Please reach out to a moderator.', ephemeral: true });
+          console.error(error.message);
+        }
       } else {
         interaction.reply({ content: `NFT ownership verification failed. Ensure your signature has starts with \`0x\` or that you own the wallet you're trying to add`, ephemeral: true});
         return;

@@ -33,14 +33,25 @@ async function dbAddressExists(interaction, userAddress) {
 }
 
 async function dbAddressInsert(interaction, userAddress, userOwnedNFTs) {
-  const db = new sqlite3.Database(dbFilePath);
+  return new Promise((resolve, reject) => {
+    const db = new sqlite3.Database(dbFilePath);
 
-  db.serialize(() => {
     const stmt = db.prepare('INSERT INTO users (discord_id, address, allowed_nfts) VALUES (?, ?, ?)');
-    stmt.run(interaction.user.id, userAddress, userOwnedNFTs);
-    stmt.finalize();
+    stmt.run(interaction.user.id, userAddress, userOwnedNFTs, (err) => {
+      stmt.finalize();
 
-    db.close();
+      if (err) {
+        db.close();
+        reject(err);
+      } else {
+        db.close((closeErr) => {
+          if (closeErr) {
+            console.error('Error closing database connection:', closeErr.message);
+          }
+        });
+        resolve();
+      }
+    });
   });
 }
 
