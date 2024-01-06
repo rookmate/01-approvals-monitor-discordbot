@@ -3,7 +3,7 @@ const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 require('dotenv').config();
 const sqlite3 = require('sqlite3');
-const { DB_PATH } = require("./constants.js");
+const { DB_PATH } = require("./utils/constants.js");
 
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });

@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { DB_PATH, ALLOWED_ROLES } = require("../constants.js");
+const { DB_PATH, ALLOWED_ROLES } = require("../utils/constants.js");
 require('dotenv').config();
 const fs = require("fs");
 const sqlite3 = require('sqlite3');

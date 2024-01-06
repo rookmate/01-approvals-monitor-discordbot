@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { DB_PATH, ALLOWED_ROLES, ALLOWED_NFTS } = require("../constants.js");
+const { DB_PATH, ALLOWED_ROLES, ALLOWED_NFTS } = require("../utils/constants.js");
 require('dotenv').config();
 const { isAddress, createPublicClient, http, verifyMessage } = require('viem');
 const { mainnet, polygon } = require('viem/chains');
