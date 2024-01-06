@@ -1,8 +1,25 @@
 const sqlite3 = require('sqlite3');
 const path = require('path');
+const fs = require('fs')
 const { DB_PATH } = require("../utils/constants");
 
 const dbFilePath = path.join(process.cwd(), DB_PATH);
+
+function createDatabase() {
+  if (!fs.existsSync(dbFilePath)) {
+    const db = new sqlite3.Database(dbFilePath);
+
+    db.serialize(() => {
+      db.run('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, discord_id TEXT, address TEXT, allowed_nfts TEXT)', (err) => {
+        if (err) {
+          console.error('Error creating the table:', err);
+        }
+      });
+      db.close();
+      console.log(`Database created!`);
+    });
+  }
+}
 
 async function dbAddressExists(userAddress) {
   return new Promise((resolve, reject) => {
@@ -125,4 +142,4 @@ async function dbAddressDelete(interaction, userAddress) {
   });
 }
 
-module.exports = { dbAddressExists, dbAddressInsert, dbListUserAddresses, dbAddressDelete };
+module.exports = { createDatabase, dbAddressExists, dbAddressInsert, dbListUserAddresses, dbAddressDelete };
