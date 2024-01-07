@@ -65,7 +65,6 @@ function getUserOwnedAllowedNFTs(userAddress) {
   });
 }
 
-// TODO: add current approvals to the logs array
 async function getUserOpenApprovalForAllLogs(blockchain, userAddress, latestBlock, current_approvals) {
   return new Promise(async (resolve, reject) => {
     const rpc = chains[blockchain].rpcEndpoint;
@@ -89,6 +88,7 @@ async function getUserOpenApprovalForAllLogs(blockchain, userAddress, latestBloc
       },
     });
 
+    logs.push(...current_approvals);
     let userOpenApprovals = [];
     for (const event of logs) {
       const existingEvent = userOpenApprovals.find((e) => e.address === event.address && e.args.operator === event.args.operator);
