@@ -1,7 +1,18 @@
 const { ALLOWED_NFTS } = require("../utils/constants");
-const { isAddress, createPublicClient, http } = require('viem');
+const { isAddress, createPublicClient, http, parseAbiItem } = require('viem');
 const { mainnet, polygon } = require('viem/chains');
 require('dotenv').config();
+
+const chains = {
+  "ethereum": {
+    rpcEndpoint: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ETH_ALCHEMY_KEY}`,
+    chain: mainnet
+  },
+  "polygon": {
+    rpcEndpoint: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.POLYGON_ALCHEMY_KEY}`,
+    chain: polygon
+  }
+};
 
 function isValidEthereumAddress(address) {
   // Check if the address matches the Ethereum address format
@@ -32,7 +43,7 @@ function getUserOwnedAllowedNFTs(userAddress) {
       const rpc = chains[nft.chain].rpcEndpoint;
       if (!rpc) {
         console.error(`Invalid or unsupported chain: ${nft.chain}`);
-        reject(`Failed to retrieve NFT data for ${nft.name}. Please contact a moderator.`);
+        reject(new Error(`Failed to retrieve NFT data for ${nft.name}. Please contact a moderator.`));
         return;
       }
 
@@ -45,7 +56,7 @@ function getUserOwnedAllowedNFTs(userAddress) {
         userOwnedNFTs["total"] += balance;
       } catch (error) {
         console.error(`Error fetching NFT data for ${nft.name}:`, error.message);
-        reject(`Failed to retrieve NFT data for ${nft.name}. Please contact a moderator.`);
+        reject(new Error(`Failed to retrieve NFT data for ${nft.name}. Please contact a moderator.`));
         return;
       }
     }
@@ -54,4 +65,52 @@ function getUserOwnedAllowedNFTs(userAddress) {
   });
 }
 
-module.exports = { isValidEthereumAddress, getUserOwnedAllowedNFTs }
+// TODO: add current approvals to the logs array
+async function getUserOpenApprovalForAllLogs(blockchain, userAddress, latestBlock, current_approvals) {
+  return new Promise(async (resolve, reject) => {
+    const rpc = chains[blockchain].rpcEndpoint;
+    if (!rpc) {
+      console.error(`Invalid or unsupported chain: ${blockchain}`);
+      reject(new Error(`Failed to retrieve NFT data for ${blockchain}. Please contact a moderator.`));
+      return;
+    }
+
+    const _clientChainData = { chain: chains[blockchain].chain, transport: http(rpc) };
+    const client = createPublicClient(_clientChainData);
+
+    const blockNumber = await client.getBlockNumber();
+    // TODO: WILL NEED TO HANDLE CASES WHERE PEOPLE APPROVED MORE THAN 2K APPROVALS
+    const logs = await client.getLogs({
+      fromBlock: latestBlock,
+      toBlock: blockNumber,
+      event: parseAbiItem('event ApprovalForAll(address indexed owner, address indexed operator, bool approved)'),
+      args: {
+        owner: userAddress,
+      },
+    });
+
+    let userOpenApprovals = [];
+    for (const event of logs) {
+      const existingEvent = userOpenApprovals.find((e) => e.address === event.address && e.args.operator === event.args.operator);
+
+      if (!existingEvent) {
+        if (event.args.approved === true) {
+          userOpenApprovals.push(event);
+        }
+      } else {
+        if (event.blockNumber > existingEvent.blockNumber && existingEvent.args.operator === event.args.operator) {
+          userOpenApprovals = userOpenApprovals.filter((e) => !(e.address === event.address && e.args.operator === event.args.operator));
+        }
+
+        if (event.args.approved === true) {
+          userOpenApprovals.push(event);
+        }
+      }
+    }
+
+    console.log(`Collected ${logs.length} approval events on ${userAddress} of which ${userOpenApprovals.length} are open approvals.`);
+    resolve({ userOpenApprovals, blockNumber });
+  });
+}
+
+module.exports = { isValidEthereumAddress, getUserOwnedAllowedNFTs, getUserOpenApprovalForAllLogs }
