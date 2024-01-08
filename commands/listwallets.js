@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { ALLOWED_ROLES } = require('../utils/constants');
-const { dbListUserAddresses } = require('../utils/db-utils');
+const { dbGetUserAddresses } = require('../utils/db-utils');
 require('dotenv').config();
 
 module.exports = {
@@ -20,7 +20,7 @@ module.exports = {
 
     console.log(`Listing all user wallets on Approvals Monitor`);
     try {
-      const result = await dbListUserAddresses(interaction);
+      const result = await dbGetUserAddresses(interaction);
       interaction.reply(result);
     } catch (error) {
       interaction.reply(error);

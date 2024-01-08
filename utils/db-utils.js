@@ -72,7 +72,7 @@ async function dbAddressInsert(interaction, userAddress, userOwnedNFTs) {
   });
 }
 
-async function dbListUserAddresses(interaction) {
+async function dbGetUserAddresses(interaction) {
   return new Promise((resolve, reject) => {
     const db = new sqlite3.Database(dbFilePath);
     let wallets = [];
@@ -142,4 +142,4 @@ async function dbAddressDelete(interaction, userAddress) {
   });
 }
 
-module.exports = { createDatabase, dbAddressExists, dbAddressInsert, dbListUserAddresses, dbAddressDelete };
+module.exports = { createDatabase, dbAddressExists, dbAddressInsert, dbGetUserAddresses, dbAddressDelete };
