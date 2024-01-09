@@ -88,7 +88,7 @@ async function getUserOpenApprovalForAllLogs(blockchain, userAddress, latestBloc
       },
     });
 
-    logs.push(...current_approvals);
+    logs.unshift(...current_approvals);
     let userOpenApprovals = [];
     for (const event of logs) {
       const existingEvent = userOpenApprovals.find((e) => e.address === event.address && e.args.operator === event.args.operator);

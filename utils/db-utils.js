@@ -142,12 +142,11 @@ async function dbAddressDelete(interaction, userAddress) {
   });
 }
 
-// TODO: Make it update the whole row or think of a different way to partition the monitoring loop
-async function dbUpdateRow(row) {
+async function dbUpdateAddressApprovals(rowId, latestBlock, approvals) {
   return new Promise((resolve, reject) => {
     const db = new sqlite3.Database(dbFilePath);
 
-    db.run("UPDATE users SET lastest_block = ?, current_approvals = ? WHERE id = ?", [row.latest_block, row.current_approvals, row.id], (err) => {
+    db.run("UPDATE users SET lastest_block = ?, current_approvals = ? WHERE id = ?", [latestBlock, approvals, rowId], (err) => {
       if (err) {
         console.error(err.message);
         db.close();
@@ -159,4 +158,4 @@ async function dbUpdateRow(row) {
   });
 }
 
-module.exports = { dbFilePath, createDatabase, dbAddressExists, dbAddressInsert, dbGetUserAddresses, dbAddressDelete, dbUpdateRow };
+module.exports = { dbFilePath, createDatabase, dbAddressExists, dbAddressInsert, dbGetUserAddresses, dbAddressDelete, dbUpdateAddressApprovals };
