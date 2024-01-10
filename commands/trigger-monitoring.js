@@ -3,7 +3,6 @@ const { dbFilePath, dbUpdateAddressApprovals } = require('../utils/db-utils');
 const { getUserOwnedAllowedNFTs, getUserOpenApprovalForAllLogs } = require('../utils/wallet-utils');
 require('dotenv').config();
 const sqlite3 = require('sqlite3');
-const util = require('util');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -13,19 +12,17 @@ module.exports = {
   async execute(interaction) {
     console.log(`1.Checking if you're Rookmate`);
     if (interaction.user.id !== '357965168254386176') return;
-
-    console.log(`2.Looping all DB entries`);
-    await interaction.reply({content: `Looping all DB entries`, ephemeral: true});
+    
     const db = new sqlite3.Database(dbFilePath);
-    const runAsync = util.promisify(db.each).bind(db);
-    await new Promise((resolve, reject) => {
-      db.each("SELECT * FROM users", (err, row) => {
-        if (err) {
-          console.error(err.message);
-          return;
-        }
+    try {
+      // Fetch data from the database
+      console.log(`2.Looping all DB entries`);
 
-        console.log(`3.Checking if users still have the allowed NFTs on the wallets, otherwise remove entry from DB`);
+      const rows = await db.all('SELECT * FROM users');
+
+      console.log(rows);
+      console.log(`3.Checking if users still have the allowed NFTs on the wallets, otherwise remove entry from DB`);
+      for (const row of rows) {
         let userOwnedNFTs;
         try {
           userOwnedNFTs = getUserOwnedAllowedNFTs(row.address);
@@ -38,8 +35,6 @@ module.exports = {
             console.log(`Deleted ${row.address} as it no longer has access to the allowed NFTs`);
             return;
           }
-
-          console.log(`3.1.USER NFTS ${userOwnedNFTs}`)
         } catch (error) {
             console.error('getUserOwnedAllowedNFTs:', error.message);
             return;
@@ -57,6 +52,9 @@ module.exports = {
           return;
         }
 
+        // Nice to have - Filter blue chip collections?
+        // Check collection name via OS - cache collection and contracts on a separate DB
+        // Nice to have - Check floor price and alert if price > X
         console.log(`5.Updating latest_block ${latestBlock} and ${userOpenApprovals.length} current_approvals for ${row.address} on the DB`);
         try {
           dbUpdateAddressApprovals(row.id, latestBlock, userOpenApprovals);
@@ -65,16 +63,13 @@ module.exports = {
           interaction.reply({ content: error.message, ephemeral: true });
           return
         }
+      }
 
-      });
-    });
-
-    db.close();
-
-    await interaction.followUp({content: `All wallets monitored`, ephemeral: true});
-    
-    // Nice to have - Filter blue chip collections?
-    // Check collection name via OS - cache collection and contracts on a separate DB
-    // Nice to have - Check floor price and alert if price > X
+      await interaction.reply({content: `All wallets monitored`, ephemeral: true});
+    } catch (error) {
+      console.error('Error fetching data or updating database:', error);
+    } finally {
+      db.close();
+    }
   },
 };
