@@ -42,11 +42,11 @@ module.exports = {
         }
 
         console.log(`4.Check all open approvals based on ${row.address} last known block: ${row.latest_block} and fetch also current_approvals ${row.current_approvals}`);
-        let userOpenApprovals;
+        let openApprovals;
         let latestBlock;
         try {
-          const { approvals, blockNumber } = await getUserOpenApprovalForAllLogs('ethereum', row.address, BigInt(row.latest_block), JSON.parse(row.current_approvals));
-          userOpenApprovals = approvals;
+          const { userOpenApprovals, blockNumber } = await getUserOpenApprovalForAllLogs('ethereum', row.address, BigInt(row.latest_block), JSON.parse(row.current_approvals));
+          openApprovals = userOpenApprovals;
           latestBlock = blockNumber;
           // -  WILL NEED TO COLLECT FALSE APPROVALS IF TRUE APPROVALS STILL EXIST OR LOAD EXISTING LIST BEFORE VALIDATION
         } catch (error) {
