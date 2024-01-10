@@ -80,7 +80,7 @@ async function getUserOpenApprovalForAllLogs(blockchain, userAddress, latestBloc
     const blockNumber = await client.getBlockNumber();
     // TODO: WILL NEED TO HANDLE CASES WHERE PEOPLE APPROVED MORE THAN 2K APPROVALS
     const logs = await client.getLogs({
-      fromBlock: latestBlock,
+      fromBlock: latestBlock ?? 0n,
       toBlock: blockNumber,
       event: parseAbiItem('event ApprovalForAll(address indexed owner, address indexed operator, bool approved)'),
       args: {

@@ -53,7 +53,13 @@ async function dbAddressInsert(interaction, userAddress, userOwnedNFTs) {
     const db = new sqlite3.Database(dbFilePath);
 
     const stmt = db.prepare('INSERT INTO users (discord_id, address, allowed_nfts, latest_block, current_approvals) VALUES (?, ?, ?, ?, ?)');
-    stmt.run(interaction.user.id, userAddress.toLowerCase(), userOwnedNFTs, 0n, "", (err) => {
+    const jsonUserOwnedNFTs = JSON.stringify(userOwnedNFTs, (key, value) => {
+      if (typeof value === 'bigint') {
+        return value.toString();
+      }
+      return value;
+    });
+    stmt.run(interaction.user.id, userAddress.toLowerCase(),  jsonUserOwnedNFTs, 0n.toString(),  JSON.stringify([]), (err) => {
       stmt.finalize();
 
       if (err) {
@@ -145,8 +151,14 @@ async function dbAddressDelete(interaction, userAddress) {
 async function dbUpdateAddressApprovals(rowId, latestBlock, approvals) {
   return new Promise((resolve, reject) => {
     const db = new sqlite3.Database(dbFilePath);
+    const jsonApprovals = JSON.stringify(approvals, (key, value) => {
+      if (typeof value === 'bigint') {
+        return value.toString();
+      }
+      return value;
+    });
 
-    db.run("UPDATE users SET lastest_block = ?, current_approvals = ? WHERE id = ?", [latestBlock, approvals, rowId], (err) => {
+    db.run("UPDATE users SET latest_block = ?, current_approvals = ? WHERE id = ?", [latestBlock.toString(),  jsonApprovals, rowId], (err) => {
       if (err) {
         console.error(err.message);
         db.close();

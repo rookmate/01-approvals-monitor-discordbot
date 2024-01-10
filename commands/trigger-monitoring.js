@@ -3,6 +3,7 @@ const { dbFilePath, dbUpdateAddressApprovals } = require('../utils/db-utils');
 const { getUserOwnedAllowedNFTs, getUserOpenApprovalForAllLogs } = require('../utils/wallet-utils');
 require('dotenv').config();
 const sqlite3 = require('sqlite3');
+const util = require('util');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -14,18 +15,18 @@ module.exports = {
     if (interaction.user.id !== '357965168254386176') return;
     
     const db = new sqlite3.Database(dbFilePath);
+    const allAsync = util.promisify(db.all).bind(db);
+
     try {
       // Fetch data from the database
       console.log(`2.Looping all DB entries`);
+      const rows = await allAsync('SELECT * FROM users');
 
-      const rows = await db.all('SELECT * FROM users');
-
-      console.log(rows);
       console.log(`3.Checking if users still have the allowed NFTs on the wallets, otherwise remove entry from DB`);
       for (const row of rows) {
         let userOwnedNFTs;
         try {
-          userOwnedNFTs = getUserOwnedAllowedNFTs(row.address);
+          userOwnedNFTs = await getUserOwnedAllowedNFTs(row.address);
           if (userOwnedNFTs["total"] === 0n) {
             db.run("DELETE FROM users WHERE address = ?", [row.address], (deleteErr) => {
               if (deleteErr) {
@@ -40,12 +41,13 @@ module.exports = {
             return;
         }
 
-        console.log(`4.Check all open approvals based on ${row.address} latest_block ${row.latest_block} fetch also current_approvals ${row.current_approvals}`);
+        console.log(`4.Check all open approvals based on ${row.address} last known block: ${row.latest_block} and fetch also current_approvals ${row.current_approvals}`);
         let userOpenApprovals;
         let latestBlock;
         try {
-          const result = getUserOpenApprovalForAllLogs('ethereum', row.address, row.latest_block, row.current_approvals);
-          userOpenApprovals, latestBlock = result;
+          const { approvals, blockNumber } = await getUserOpenApprovalForAllLogs('ethereum', row.address, BigInt(row.latest_block), JSON.parse(row.current_approvals));
+          userOpenApprovals = approvals;
+          latestBlock = blockNumber;
           // -  WILL NEED TO COLLECT FALSE APPROVALS IF TRUE APPROVALS STILL EXIST OR LOAD EXISTING LIST BEFORE VALIDATION
         } catch (error) {
           console.error('getUserOpenApprovalForAllLogs:', error.message);
