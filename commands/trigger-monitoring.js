@@ -41,7 +41,7 @@ module.exports = {
             return;
         }
 
-        console.log(`4.Check all open approvals based on ${row.address} last known block: ${row.latest_block} and fetch also current_approvals ${row.current_approvals}`);
+        console.log(`4.Check all open approvals based on ${row.address} last known block: ${row.latest_block} and fetch also ${JSON.parse(row.current_approvals).length} current_approvals`);
         let openApprovals;
         let latestBlock;
         try {
@@ -54,16 +54,16 @@ module.exports = {
           return;
         }
 
-        // Nice to have - Filter blue chip collections?
+        // Nice to have - Filter blue chip collections? or all
         // Check collection name via OS - cache collection and contracts on a separate DB
         // Nice to have - Check floor price and alert if price > X
-        console.log(`5.Updating latest_block ${latestBlock} and ${userOpenApprovals.length} current_approvals for ${row.address} on the DB`);
+        console.log(`5.Updating latest_block ${latestBlock} and ${openApprovals.length} current_approvals for ${row.address} on the DB`);
         try {
-          dbUpdateAddressApprovals(row.id, latestBlock, userOpenApprovals);
+          await dbUpdateAddressApprovals(row.id, latestBlock, openApprovals);
         } catch (error) {
           console.error('dbUpdateAddressApprovals:', error.message);
           interaction.reply({ content: error.message, ephemeral: true });
-          return
+          return;
         }
       }
 
