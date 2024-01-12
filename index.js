@@ -9,6 +9,7 @@ client.commands = cmdParser('set', client.commands);
 
 client.once(Events.ClientReady, readyClient => {
   db.createUsersDatabase();
+  db.createNFTCollectionDatabase();
   console.log(`Ready! Logged in as ${readyClient.user.tag}`);
 });
 

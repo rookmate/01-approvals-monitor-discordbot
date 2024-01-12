@@ -1,7 +1,8 @@
 exports.GUILD_ID = "1023204692769112065"
 exports.APP_ID = "1189325406822748251"
 
-exports.DB_PATH = "db/users.db"
+exports.DB_USERS_PATH = "db/users.db"
+exports.DB_COLLECTIONS_PATH = "db/nftcollections.db"
 
 exports.ALLOWED_ROLES = {
     "101": "1002181020189204511",

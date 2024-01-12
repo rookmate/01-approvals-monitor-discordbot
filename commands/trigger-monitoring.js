@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { dbFilePath, dbUpdateAddressApprovals } = require('../utils/db-utils');
+const { dbUsersFilePath, dbUpdateAddressApprovals } = require('../utils/db-utils');
 const { getUserOwnedAllowedNFTs, getUserOpenApprovalForAllLogs } = require('../utils/wallet-utils');
 require('dotenv').config();
 const sqlite3 = require('sqlite3');
@@ -14,7 +14,7 @@ module.exports = {
     console.log(`1.Checking if you're Rookmate`);
     if (interaction.user.id !== '357965168254386176') return;
     
-    const db = new sqlite3.Database(dbFilePath);
+    const db = new sqlite3.Database(dbUsersFilePath);
     const allAsync = util.promisify(db.all).bind(db);
 
     try {

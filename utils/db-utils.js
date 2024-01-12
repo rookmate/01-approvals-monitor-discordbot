@@ -1,13 +1,14 @@
 const sqlite3 = require('sqlite3');
 const path = require('path');
 const fs = require('fs')
-const { DB_PATH } = require("../utils/constants");
+const { DB_USERS_PATH, DB_COLLECTIONS_PATH } = require("../utils/constants");
 
-const dbFilePath = path.join(process.cwd(), DB_PATH);
+const dbUsersFilePath = path.join(process.cwd(), DB_USERS_PATH);
+const dbCollectionsFilePath = path.join(process.cwd(), DB_COLLECTIONS_PATH);
 
 function createUsersDatabase() {
-  if (!fs.existsSync(dbFilePath)) {
-    const db = new sqlite3.Database(dbFilePath);
+  if (!fs.existsSync(dbUsersFilePath)) {
+    const db = new sqlite3.Database(dbUsersFilePath);
 
     db.serialize(() => {
       db.run('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, discord_id TEXT, address TEXT, allowed_nfts TEXT, latest_block INTEGER, current_approvals TEXT)', (err) => {
@@ -23,7 +24,7 @@ function createUsersDatabase() {
 
 async function dbAddressExists(userAddress) {
   return new Promise((resolve, reject) => {
-    const db = new sqlite3.Database(dbFilePath);
+    const db = new sqlite3.Database(dbUsersFilePath);
     db.all('SELECT address FROM users WHERE address LIKE ?', [userAddress.toLowerCase()], (err, rows) => {
       try {
         if (err) {
@@ -50,7 +51,7 @@ async function dbAddressExists(userAddress) {
 
 async function dbAddressInsert(interaction, userAddress, userOwnedNFTs) {
   return new Promise((resolve, reject) => {
-    const db = new sqlite3.Database(dbFilePath);
+    const db = new sqlite3.Database(dbUsersFilePath);
 
     const stmt = db.prepare('INSERT INTO users (discord_id, address, allowed_nfts, latest_block, current_approvals) VALUES (?, ?, ?, ?, ?)');
     const jsonUserOwnedNFTs = JSON.stringify(userOwnedNFTs, (key, value) => {
@@ -80,7 +81,7 @@ async function dbAddressInsert(interaction, userAddress, userOwnedNFTs) {
 
 async function dbGetUserAddresses(interaction) {
   return new Promise((resolve, reject) => {
-    const db = new sqlite3.Database(dbFilePath);
+    const db = new sqlite3.Database(dbUsersFilePath);
     let wallets = [];
 
     db.each('SELECT address FROM users WHERE discord_id = ?', [interaction.user.id], (err, row) => {
@@ -120,8 +121,7 @@ async function dbGetUserAddresses(interaction) {
 
 async function dbAddressDelete(interaction, userAddress) {
   return new Promise((resolve, reject) => {
-    const dbFilePath = path.join(process.cwd(), DB_PATH);
-    const db = new sqlite3.Database(dbFilePath);
+    const db = new sqlite3.Database(dbUsersFilePath);
 
     db.run('DELETE FROM users WHERE address = ? AND discord_id = ?', [userAddress.toLowerCase(), interaction.user.id], function (err) {
       if (err) {
@@ -150,7 +150,7 @@ async function dbAddressDelete(interaction, userAddress) {
 
 async function dbUpdateAddressApprovals(rowId, latestBlock, approvals) {
   return new Promise((resolve, reject) => {
-    const db = new sqlite3.Database(dbFilePath);
+    const db = new sqlite3.Database(dbUsersFilePath);
     const jsonApprovals = JSON.stringify(approvals, (key, value) => {
       if (typeof value === 'bigint') {
         return value.toString();
@@ -170,4 +170,20 @@ async function dbUpdateAddressApprovals(rowId, latestBlock, approvals) {
   });
 }
 
-module.exports = { dbFilePath, createUsersDatabase, dbAddressExists, dbAddressInsert, dbGetUserAddresses, dbAddressDelete, dbUpdateAddressApprovals };
+function createNFTCollectionDatabase() {
+  if (!fs.existsSync(dbCollectionsFilePath)) {
+    const db = new sqlite3.Database(dbCollectionsFilePath);
+
+    db.serialize(() => {
+      db.run('CREATE TABLE nftcollections (id INTEGER PRIMARY KEY AUTOINCREMENT, collection_address TEXT, collection_name TEXT, floor_price TEXT)', (err) => {
+        if (err) {
+          console.error('Error creating the table:', err);
+        }
+      });
+      db.close();
+      console.log(`NFT Collections database created!`);
+    });
+  }
+}
+
+module.exports = { dbUsersFilePath, dbCollectionsFilePath, createUsersDatabase, dbAddressExists, dbAddressInsert, dbGetUserAddresses, dbAddressDelete, dbUpdateAddressApprovals, createNFTCollectionDatabase };
