@@ -175,7 +175,7 @@ function createNFTCollectionDatabase() {
     const db = new sqlite3.Database(dbCollectionsFilePath);
 
     db.serialize(() => {
-      db.run('CREATE TABLE nftcollections (id INTEGER PRIMARY KEY AUTOINCREMENT, collection_address TEXT, collection_name TEXT, floor_price TEXT)', (err) => {
+      db.run('CREATE TABLE nftcollections (collection_address TEXT PRIMARY KEY, collection_name TEXT, floor_price TEXT)', (err) => {
         if (err) {
           console.error('Error creating the table:', err);
         }
