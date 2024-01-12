@@ -48,7 +48,6 @@ module.exports = {
           const { userOpenApprovals, blockNumber } = await getUserOpenApprovalForAllLogs('ethereum', row.address, BigInt(row.latest_block), JSON.parse(row.current_approvals));
           openApprovals = userOpenApprovals;
           latestBlock = blockNumber;
-          // -  WILL NEED TO COLLECT FALSE APPROVALS IF TRUE APPROVALS STILL EXIST OR LOAD EXISTING LIST BEFORE VALIDATION
         } catch (error) {
           console.error('getUserOpenApprovalForAllLogs:', error.message);
           return;
@@ -66,9 +65,16 @@ module.exports = {
         }
 
         console.log(`Get contract names for each contract that the user has open approvals on`);
-        const userExposedNFTs = await getUserExposedNFTs(userAddress, userOpenApprovals);
+        const userExposedNFTs = await getUserExposedNFTs(userAddress, openApprovals);
         const userExposedCollections = await getUserExposedCollectionNames(userExposedNFTs);
         console.log(`Collected ${openApprovals.length} open approvals on ${userAddress} of which ${userExposedCollections.length} exposed NFT collections and ${userExposedNFTs.length} NFTs`);
+        try {
+          console.log(`Update collections that need monitoring`);
+          await dbNewCollectionInsert(userExposedCollections);
+        }  catch (error) {
+          console.error('dbCollectionInsert:', error.message);
+          return;
+        }
       }
 
       await interaction.reply({content: `All wallets monitored`, ephemeral: true});
