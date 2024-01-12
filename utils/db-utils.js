@@ -174,14 +174,23 @@ function createNFTCollectionDatabase() {
   if (!fs.existsSync(dbCollectionsFilePath)) {
     const db = new sqlite3.Database(dbCollectionsFilePath);
 
+    // Using the default for insertion as slightly higher than 1 day before to ensure floor prices for new additions are always ran
     db.serialize(() => {
-      db.run('CREATE TABLE nftcollections (collection_address TEXT PRIMARY KEY, collection_name TEXT, floor_price TEXT)', (err) => {
+      db.run(`
+        CREATE TABLE nftcollections (
+          collection_address TEXT PRIMARY KEY,
+          collection_name TEXT,
+          floor_price TEXT,
+          timestamp_column TIMESTAMP DEFAULT (strftime('%s', 'now') - 87000)
+        )`, (err) => {
         if (err) {
           console.error('Error creating the table:', err);
+        } else {
+          console.log('NFT Collections table created!');
         }
       });
+
       db.close();
-      console.log(`NFT Collections database created!`);
     });
   }
 }
