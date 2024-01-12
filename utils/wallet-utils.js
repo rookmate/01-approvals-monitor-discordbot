@@ -145,7 +145,8 @@ async function getUserExposedCollectionNames(userExposedNFTs) {
   return new Promise(async (resolve, reject) => {
     const exposedCollectionsSet = new Set();
     const userExposedCollections = userExposedNFTs.map(collection => {
-      const { name, address } = collection.contract;
+      const { address } = collection.contract;
+      const name = collection.contract.openSeaMetadata.collectionName;
       if (!exposedCollectionsSet.has(address)) {
         exposedCollectionsSet.add(address);
         return { name, address };
