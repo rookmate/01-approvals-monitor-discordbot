@@ -1,6 +1,7 @@
 const sqlite3 = require('sqlite3');
 const path = require('path');
 const fs = require('fs');
+const util = require('util');
 const { DB_USERS_PATH, DB_COLLECTIONS_PATH } = require("../utils/constants");
 
 const dbUsersFilePath = path.join(process.cwd(), DB_USERS_PATH);
@@ -225,4 +226,24 @@ async function dbNewCollectionInsert(userExposedCollections) {
   });
 }
 
-module.exports = { dbUsersFilePath, dbCollectionsFilePath, createUsersDatabase, dbAddressExists, dbAddressInsert, dbGetUserAddresses, dbAddressDelete, dbUpdateAddressApprovals, createNFTCollectionDatabase, dbNewCollectionInsert };
+async function getCollectionAddressesOneDayOlder() {
+  const db = new sqlite3.Database(dbCollectionsFilePath);
+  const dbAllAsync = util.promisify(db.all).bind(db);
+
+  const query = `
+    SELECT collection_address
+    FROM nftcollections
+    WHERE DATE(timestamp_column) = DATE('now', '-1 day');
+  `;
+
+  try {
+    const rows = await dbAllAsync(query);
+    console.log('Addresses one day older:', rows);
+  } catch (err) {
+    console.error('Error querying the database:', err);
+  } finally {
+    db.close();
+  }
+}
+
+module.exports = { dbUsersFilePath, dbCollectionsFilePath, createUsersDatabase, dbAddressExists, dbAddressInsert, dbGetUserAddresses, dbAddressDelete, dbUpdateAddressApprovals, createNFTCollectionDatabase, dbNewCollectionInsert, getCollectionAddressesOneDayOlder };
