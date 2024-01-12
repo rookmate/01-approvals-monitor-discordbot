@@ -5,7 +5,7 @@ const { DB_PATH } = require("../utils/constants");
 
 const dbFilePath = path.join(process.cwd(), DB_PATH);
 
-function createDatabase() {
+function createUsersDatabase() {
   if (!fs.existsSync(dbFilePath)) {
     const db = new sqlite3.Database(dbFilePath);
 
@@ -16,7 +16,7 @@ function createDatabase() {
         }
       });
       db.close();
-      console.log(`Database created!`);
+      console.log(`Users database created!`);
     });
   }
 }
@@ -170,4 +170,4 @@ async function dbUpdateAddressApprovals(rowId, latestBlock, approvals) {
   });
 }
 
-module.exports = { dbFilePath, createDatabase, dbAddressExists, dbAddressInsert, dbGetUserAddresses, dbAddressDelete, dbUpdateAddressApprovals };
+module.exports = { dbFilePath, createUsersDatabase, dbAddressExists, dbAddressInsert, dbGetUserAddresses, dbAddressDelete, dbUpdateAddressApprovals };

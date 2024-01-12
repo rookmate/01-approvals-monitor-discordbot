@@ -8,7 +8,7 @@ client.commands = new Collection();
 client.commands = cmdParser('set', client.commands);
 
 client.once(Events.ClientReady, readyClient => {
-  db.createDatabase();
+  db.createUsersDatabase();
   console.log(`Ready! Logged in as ${readyClient.user.tag}`);
 });
 
