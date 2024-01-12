@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { dbUsersFilePath, dbUpdateAddressApprovals } = require('../utils/db-utils');
-const { getUserOwnedAllowedNFTs, getUserOpenApprovalForAllLogs } = require('../utils/wallet-utils');
+const { getUserOwnedAllowedNFTs, getUserOpenApprovalForAllLogs, getUserExposedNFTs, getUserExposedCollectionNames } = require('../utils/wallet-utils');
 require('dotenv').config();
 const sqlite3 = require('sqlite3');
 const util = require('util');
@@ -68,7 +68,7 @@ module.exports = {
         console.log(`Get contract names for each contract that the user has open approvals on`);
         const userExposedNFTs = await getUserExposedNFTs(userAddress, userOpenApprovals);
         const userExposedCollections = await getUserExposedCollectionNames(userExposedNFTs);
-        console.log(`Collected ${userOpenApprovals.length} open approvals on ${userAddress} of which ${userExposedCollections.length} exposed NFT collections and ${userExposedNFTs.length} NFTs`);
+        console.log(`Collected ${openApprovals.length} open approvals on ${userAddress} of which ${userExposedCollections.length} exposed NFT collections and ${userExposedNFTs.length} NFTs`);
       }
 
       await interaction.reply({content: `All wallets monitored`, ephemeral: true});

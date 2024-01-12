@@ -1,6 +1,6 @@
 const sqlite3 = require('sqlite3');
 const path = require('path');
-const fs = require('fs')
+const fs = require('fs');
 const { DB_USERS_PATH, DB_COLLECTIONS_PATH } = require("../utils/constants");
 
 const dbUsersFilePath = path.join(process.cwd(), DB_USERS_PATH);
@@ -193,7 +193,7 @@ async function dbNewCollectionInsert(userExposedCollections) {
     const stmt = db.prepare('INSERT OR IGNORE INTO nftcollections (collection_address, collection_name, floor_price) VALUES (?, ?, ?)');
     userExposedCollections.forEach(collection => {
       if (collection.name && collection.address) {
-        stmt.run(collection.address, collection.name, "");
+        stmt.run(collection.address.toLowerCase(), collection.name, "");
       }
     });
 
@@ -207,6 +207,7 @@ async function dbNewCollectionInsert(userExposedCollections) {
         db.close((closeErr) => {
           if (closeErr) {
             console.error('Error closing database connection:', closeErr.message);
+            reject(new Error('Internal DB error. Please reach out to a moderator.'));
           }
         });
         resolve(`Successfully added ${userExposedCollections.length} NFT collections to the monitoring caching service!`);
