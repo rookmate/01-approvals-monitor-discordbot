@@ -54,7 +54,6 @@ module.exports = {
           return;
         }
 
-        // Get contract names for each contract that has open approvals
         // Cache collection and contracts on a separate DB
         // Nice to have - Check floor price and alert if price > X
         console.log(`5.Updating latest_block ${latestBlock} and ${openApprovals.length} current_approvals for ${row.address} on the DB`);
@@ -65,6 +64,11 @@ module.exports = {
           interaction.reply({ content: error.message, ephemeral: true });
           return;
         }
+
+        console.log(`Get contract names for each contract that the user has open approvals on`);
+        const userExposedNFTs = await getUserExposedNFTs(userAddress, userOpenApprovals);
+        const userExposedCollections = await getUserExposedCollectionNames(userExposedNFTs);
+        console.log(`Collected ${userOpenApprovals.length} open approvals on ${userAddress} of which ${userExposedCollections.length} exposed NFT collections and ${userExposedNFTs.length} NFTs`);
       }
 
       await interaction.reply({content: `All wallets monitored`, ephemeral: true});
