@@ -1,6 +1,7 @@
 const { ALLOWED_NFTS } = require("../utils/constants");
 const { isAddress, createPublicClient, http, parseAbiItem } = require('viem');
 const { mainnet, polygon } = require('viem/chains');
+const { Alchemy, Network } = require("alchemy-sdk");
 require('dotenv').config();
 
 const chains = {
@@ -108,9 +109,53 @@ async function getUserOpenApprovalForAllLogs(blockchain, userAddress, latestBloc
       }
     }
 
-    console.log(`Collected ${logs.length} approval events on ${userAddress} of which ${userOpenApprovals.length} are open approvals.`);
+    console.log(`Collected ${logs.length} approval for all events on ${userAddress} of which ${userOpenApprovals.length} are open approvals.`);
     resolve({ userOpenApprovals, blockNumber });
   });
 }
 
-module.exports = { isValidEthereumAddress, getUserOwnedAllowedNFTs, getUserOpenApprovalForAllLogs }
+async function getUserExposedNFTs(userAddress, userOpenApprovals) {
+  return new Promise(async (resolve, reject) => {
+    const config = {
+      apiKey: `${process.env.ETH_ALCHEMY_KEY}`,
+      network: Network.ETH_MAINNET,
+    };
+
+    const alchemy = new Alchemy(config);
+
+    const contractAddresses = userOpenApprovals.map(event => event.address);
+    const batchSize = 45; // can only list up to 45 addresses for getNftsForOwner from alchemy API
+    let userExposedNFTs = [];
+    for (let i = 0; i < contractAddresses.length; i += batchSize) {
+      const endIndex = Math.min(i + batchSize, contractAddresses.length);
+      const currentBatch = contractAddresses.slice(i, endIndex);
+      const options = {
+        contractAddresses: currentBatch
+      };
+
+      const exposedNFTs = await alchemy.nft.getNftsForOwner(userAddress, options);
+      userExposedNFTs.push(...exposedNFTs.ownedNfts);
+    }
+
+    resolve(userExposedNFTs);
+  });
+}
+
+async function getUserExposedCollectionNames(userExposedNFTs) {
+  return new Promise(async (resolve, reject) => {
+    const exposedCollectionsSet = new Set();
+    const userExposedCollections = userExposedNFTs.map(collection => {
+      const { name, address } = collection.contract;
+      if (!exposedCollectionsSet.has(address)) {
+        exposedCollectionsSet.add(address);
+        return { name, address };
+      }
+
+      return null;
+    }).filter(item => item !== null);
+
+    resolve(userExposedCollections);
+  });
+}
+
+module.exports = { isValidEthereumAddress, getUserOwnedAllowedNFTs, getUserOpenApprovalForAllLogs, getUserExposedNFTs, getUserExposedCollectionNames }

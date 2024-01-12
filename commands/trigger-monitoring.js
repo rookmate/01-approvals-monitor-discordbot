@@ -54,8 +54,8 @@ module.exports = {
           return;
         }
 
-        // Nice to have - Filter blue chip collections? or all
-        // Check collection name via OS - cache collection and contracts on a separate DB
+        // Get contract names for each contract that has open approvals
+        // Cache collection and contracts on a separate DB
         // Nice to have - Check floor price and alert if price > X
         console.log(`5.Updating latest_block ${latestBlock} and ${openApprovals.length} current_approvals for ${row.address} on the DB`);
         try {
