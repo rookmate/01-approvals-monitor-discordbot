@@ -186,4 +186,33 @@ function createNFTCollectionDatabase() {
   }
 }
 
-module.exports = { dbUsersFilePath, dbCollectionsFilePath, createUsersDatabase, dbAddressExists, dbAddressInsert, dbGetUserAddresses, dbAddressDelete, dbUpdateAddressApprovals, createNFTCollectionDatabase };
+async function dbNewCollectionInsert(userExposedCollections) {
+  return new Promise((resolve, reject) => {
+    const db = new sqlite3.Database(dbCollectionsFilePath);
+
+    const stmt = db.prepare('INSERT OR IGNORE INTO nftcollections (collection_address, collection_name, floor_price) VALUES (?, ?, ?)');
+    userExposedCollections.forEach(collection => {
+      if (collection.name && collection.address) {
+        stmt.run(collection.address, collection.name, "");
+      }
+    });
+
+    stmt.finalize((err) => {
+
+      if (err) {
+        db.close();
+        console.error(err.message);
+        reject(new Error('Internal DB error. Please reach out to a moderator.'));
+      } else {
+        db.close((closeErr) => {
+          if (closeErr) {
+            console.error('Error closing database connection:', closeErr.message);
+          }
+        });
+        resolve(`Successfully added ${userExposedCollections.length} NFT collections to the monitoring caching service!`);
+      }
+    });
+  });
+}
+
+module.exports = { dbUsersFilePath, dbCollectionsFilePath, createUsersDatabase, dbAddressExists, dbAddressInsert, dbGetUserAddresses, dbAddressDelete, dbUpdateAddressApprovals, createNFTCollectionDatabase, dbNewCollectionInsert };
