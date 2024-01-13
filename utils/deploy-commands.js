@@ -7,11 +7,11 @@ const commands = cmdParser('deploy', []);
 
 const rest = new REST().setToken(process.env.DISCORD_TOKEN);
 (async () => {
-  try {
-    console.log(`Refreshing ${commands.length} application (/) commands.`);
-    const data = await rest.put(Routes.applicationGuildCommands(constants.APP_ID, constants.GUILD_ID), { body: commands });
-    console.log(`Successfully reloaded ${data.length} application (/) commands.`);
-  } catch (error) {
-    console.error(error);
-  }
+  console.log(`Refreshing ${commands.length} application (/) commands.`);
+  await rest.put(Routes.applicationGuildCommands(constants.APP_ID, constants.GUILD_ID), { body: [] })
+    .then(() => console.log('Successfully deleted all guild commands.'))
+    .catch(console.error);
+  await rest.put(Routes.applicationGuildCommands(constants.APP_ID, constants.GUILD_ID), { body: commands })
+    .then(() => console.log('Successfully reloaded all application (/) commands.'))
+    .catch(console.error);
 })();
