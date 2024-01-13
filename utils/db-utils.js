@@ -254,17 +254,16 @@ async function dbUpdateCollectionFloors(updatedFloors) {
   const db = new sqlite3.Database(dbCollectionsFilePath);
   const dbRunAsync = util.promisify(db.run).bind(db);
 
-  for (const collection of updatedFloors) {
-    await dbRunAsync("UPDATE nftcollections SET floor_price = ?, symbol = ? WHERE collection_address = ?", [collection.price.toString(),  collection.symbol, collection.address], (err) => {
-      if (err) {
-        console.error(err.message);
-        db.close();
-        reject(new Error('Internal DB error. Please reach out to a moderator.'));
-      }
-    });
+  try {
+    for (const collection of updatedFloors) {
+      await dbRunAsync("UPDATE nftcollections SET floor_price = ?, symbol = ?, timestamp_column = strftime('%s', 'now') WHERE collection_address = ?", [collection.price.toString(), collection.symbol, collection.address]);
+    }
+  } catch (err) {
+    console.error(err.message);
+    throw new Error('Internal DB error. Please reach out to a moderator.');
+  } finally {
+    db.close();
   }
-
-  db.close();
 }
 
 module.exports = { dbUsersFilePath, dbCollectionsFilePath, createUsersDatabase, dbAddressExists, dbAddressInsert, dbGetUserAddresses, dbAddressDelete, dbUpdateAddressApprovals, createNFTCollectionDatabase, dbNewCollectionInsert, getCollectionAddressesOneDayOlder, dbUpdateCollectionFloors };
