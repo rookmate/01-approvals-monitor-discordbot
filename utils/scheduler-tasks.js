@@ -1,7 +1,7 @@
 require('dotenv').config();
 const sqlite3 = require('sqlite3');
 const util = require('util');
-const { dbUsersFilePath, dbUpdateAddressApprovals, dbNewCollectionInsert, getCollectionAddressesOneDayOlder, dbUpdateCollections, dbUpdateInWallet } = require('./db-utils');
+const { dbUsersFilePath, dbUpdateAddressApprovals, dbNewCollectionInsert, getCollectionAddressesOneDayOlder, dbUpdateCollections, dbUpdateInWallet, dbCollectionsFilePath } = require('./db-utils');
 const { getUserOwnedAllowedNFTs, getUserOpenApprovalForAllLogs, getUserExposedNFTs, getUserExposedCollections, getFloorData } = require('./wallet-utils');
 
 async function monitoringLoop() {
@@ -103,24 +103,32 @@ async function monitoringLoop() {
   } finally {
     db.close();
   }
-
-  // try {
-  //   console.log(`1Re-Looping all DB entries`);
-  //   const rows = await allAsync('SELECT * FROM users');
-
-  //   console.log(`1Send message to users`);
-  //   for (const row of rows) {
-      
-  //   }
-
-  //   // Send message to the user with his "parsed" data
-  //   // Find a way to correlate open approvals with collection data
-  //   await interaction.reply({content: `All wallets monitored`, ephemeral: true});
-  // } catch (error) {
-  //   console.error('Error fetching data or updating database:', error);
-  // } finally {
-  //   db.close();
-  // }
 }
 
-module.exports = { monitoringLoop };
+async function notifyUsers(client) {
+  const usersDb = new sqlite3.Database(dbUsersFilePath);
+  const allUsersAsync = util.promisify(usersDb.all).bind(usersDb);
+  const collectionsDb = new sqlite3.Database(dbCollectionsFilePath);
+  const allCollectionsAsync = util.promisify(collectionsDb.all).bind(collectionsDb);
+
+  try {
+    const userRows = await allUsersAsync('SELECT * FROM users');
+
+    for (const row of userRows) {
+      console.log(row)
+      const collectionAddressesString = "'" + JSON.parse(row.inwallet_approvals).inwallet.join("','") + "'";
+      const rows = await allCollectionsAsync(`SELECT * FROM nftcollections WHERE collection_address IN (${collectionAddressesString})`);
+      console.log(rows);
+      const message = `Collected ${JSON.parse(row.current_approvals).length} open approvals on ${row.address} of which ${JSON.parse(row.inwallet_approvals).inwallet.length} exposed NFT collections and ${JSON.parse(row.inwallet_approvals).total_nfts} NFTs`;
+      console.log(message);
+      // const user = await client.users.fetch(row.discord_id);
+      // await user.send(message);
+    }
+  } catch (error) {
+    console.error('Error fetching data or updating database:', error);
+  } finally {
+    usersDb.close();
+  }
+}
+
+module.exports = { monitoringLoop, notifyUsers };

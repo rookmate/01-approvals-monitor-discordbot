@@ -2,7 +2,7 @@ const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 require('dotenv').config();
 const cmdParser = require('./utils/command-parser');
 const db = require('./utils/db-utils.js');
-const { monitoringLoop } = require('./utils/scheduler-tasks.js');
+const { monitoringLoop, notifyUsers } = require('./utils/scheduler-tasks.js');
 const cron = require('node-cron');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
@@ -12,14 +12,14 @@ client.commands = cmdParser('set', client.commands);
 client.once(Events.ClientReady, readyClient => {
   db.createUsersDatabase();
   db.createNFTCollectionDatabase();
-  cron.schedule('*/2 * * * *', async () => {
+  cron.schedule('*/1 * * * *', async () => {
   // cron.schedule('0 0 * * 0', async () => {
-    try {
-      await monitoringLoop();
-      console.log('Finished monitoring loop.');
-    } catch (error) {
-      console.error('Error performing scheduled tasks', error);
-    }
+    // await monitoringLoop()
+    //   .then(() => console.log('Finished monitoring loop'))
+    //   .catch(() => 'Error performing scheduled tasks', error);
+    await notifyUsers(client)
+      .then(() => console.log('Finished notifying users'))
+      .catch(() => 'Error notifying users', error);
   }, {
     timezone: 'UTC'
   });
