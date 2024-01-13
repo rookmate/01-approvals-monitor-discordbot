@@ -75,6 +75,32 @@ module.exports = {
           console.error('dbCollectionInsert:', error.message);
           return;
         }
+
+        console.log(`Get collections that haven't had it's floors updated in more than one day on the database`)
+        let collectionsToUpdate;
+        try {
+          collectionsToUpdate = await getCollectionAddressesOneDayOlder();
+        }  catch (error) {
+          console.error('getCollectionAddressesOneDayOlder:', error.message);
+          return;
+        }
+
+        console.log(`Get all floor data for collections to update`);
+        let updatedFloors;
+        try {
+          updatedFloors = await getFloorData(collectionsToUpdate);
+        }  catch (error) {
+          console.error('getFloorData:', error.message);
+          return;
+        }
+
+        console.log(`Update all floors on DB collections`);
+        try {
+          await dbUpdateCollectionFloors(updatedFloors);
+        }  catch (error) {
+          console.error('dbUpdateCollectionFloors:', error.message);
+          return;
+        }
       }
 
       await interaction.reply({content: `All wallets monitored`, ephemeral: true});
