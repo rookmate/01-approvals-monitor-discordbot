@@ -170,7 +170,7 @@ async function getFloorData(contractAddresses) {
       const currentBatch = contractAddresses.slice(i, endIndex);
       const response = await sdk.getCollectionsV7({ contract: currentBatch, accept: '*/*' });
       const parsedData = response.data.collections.map(collection => ({
-        address: collection.id,
+        address: collection.id.toLowerCase(),
         price: collection.floorAsk.price.amount.decimal,
         symbol: collection.floorAsk.price.currency.symbol,
       }));

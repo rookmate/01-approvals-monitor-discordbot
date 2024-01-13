@@ -182,6 +182,7 @@ function createNFTCollectionDatabase() {
           collection_address TEXT PRIMARY KEY,
           collection_name TEXT,
           floor_price TEXT,
+          symbol TEXT,
           timestamp_column TIMESTAMP DEFAULT (strftime('%s', 'now') - 87000)
         )`, (err) => {
         if (err) {
@@ -200,10 +201,10 @@ async function dbNewCollectionInsert(userExposedCollections) {
   return new Promise((resolve, reject) => {
     const db = new sqlite3.Database(dbCollectionsFilePath);
 
-    const stmt = db.prepare('INSERT OR IGNORE INTO nftcollections (collection_address, collection_name, floor_price) VALUES (?, ?, ?)');
+    const stmt = db.prepare('INSERT OR IGNORE INTO nftcollections (collection_address, collection_name, floor_price, symbol) VALUES (?, ?, ?, ?)');
     userExposedCollections.forEach(collection => {
       if (collection.name && collection.address) {
-        stmt.run(collection.address.toLowerCase(), collection.name, "");
+        stmt.run(collection.address.toLowerCase(), collection.name, "", "");
       }
     });
 
@@ -249,4 +250,21 @@ async function getCollectionAddressesOneDayOlder() {
   return addresses;
 }
 
-module.exports = { dbUsersFilePath, dbCollectionsFilePath, createUsersDatabase, dbAddressExists, dbAddressInsert, dbGetUserAddresses, dbAddressDelete, dbUpdateAddressApprovals, createNFTCollectionDatabase, dbNewCollectionInsert, getCollectionAddressesOneDayOlder };
+async function dbUpdateCollectionFloors(updatedFloors) {
+  const db = new sqlite3.Database(dbCollectionsFilePath);
+  const dbRunAsync = util.promisify(db.run).bind(db);
+
+  for (const collection of updatedFloors) {
+    await dbRunAsync("UPDATE nftcollections SET floor_price = ?, symbol = ? WHERE collection_address = ?", [collection.price.toString(),  collection.symbol, collection.address], (err) => {
+      if (err) {
+        console.error(err.message);
+        db.close();
+        reject(new Error('Internal DB error. Please reach out to a moderator.'));
+      }
+    });
+  }
+
+  db.close();
+}
+
+module.exports = { dbUsersFilePath, dbCollectionsFilePath, createUsersDatabase, dbAddressExists, dbAddressInsert, dbGetUserAddresses, dbAddressDelete, dbUpdateAddressApprovals, createNFTCollectionDatabase, dbNewCollectionInsert, getCollectionAddressesOneDayOlder, dbUpdateCollectionFloors };
