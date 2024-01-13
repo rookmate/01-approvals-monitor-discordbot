@@ -3,6 +3,7 @@ const { isAddress, createPublicClient, http, parseAbiItem } = require('viem');
 const { mainnet, polygon } = require('viem/chains');
 const { Alchemy, Network } = require("alchemy-sdk");
 require('dotenv').config();
+const sdk = require('api')('@reservoirprotocol/v3.0#j7ej3alr9o3etb');
 
 const chains = {
   "ethereum": {
@@ -159,4 +160,28 @@ async function getUserExposedCollectionNames(userExposedNFTs) {
   });
 }
 
-module.exports = { isValidEthereumAddress, getUserOwnedAllowedNFTs, getUserOpenApprovalForAllLogs, getUserExposedNFTs, getUserExposedCollectionNames }
+async function getFloorData(contractAddresses) {
+  try {
+    await sdk.auth(`${process.env.RESERVOIR_KEY}`);
+    const batchSize = 50; // can only list up to 50 addresses for getCollectionsV7 from reservoir API
+    let updatedFloors = [];
+    for (let i = 0; i < contractAddresses.length; i += batchSize) {
+      const endIndex = Math.min(i + batchSize, contractAddresses.length);
+      const currentBatch = contractAddresses.slice(i, endIndex);
+      const response = await sdk.getCollectionsV7({ contract: currentBatch, accept: '*/*' });
+      const parsedData = response.data.collections.map(collection => ({
+        address: collection.id,
+        price: collection.floorAsk.price.amount.decimal,
+        symbol: collection.floorAsk.price.currency.symbol,
+      }));
+
+      updatedFloors.push(...parsedData);
+    }
+
+    return updatedFloors;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+module.exports = { isValidEthereumAddress, getUserOwnedAllowedNFTs, getUserOpenApprovalForAllLogs, getUserExposedNFTs, getUserExposedCollectionNames, getFloorData }
