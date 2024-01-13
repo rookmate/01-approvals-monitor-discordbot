@@ -10,6 +10,7 @@
   "license": "MIT",
   "dependencies": {
     "alchemy-sdk": "^3.1.1",
+    "api": "^6.1.1",
     "discord.js": "^14.14.1",
     "dotenv": "^16.3.1",
     "sqlite3": "^5.1.7-rc.0",
