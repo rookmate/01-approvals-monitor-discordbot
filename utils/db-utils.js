@@ -233,17 +233,20 @@ async function getCollectionAddressesOneDayOlder() {
   const query = `
     SELECT collection_address
     FROM nftcollections
-    WHERE DATE(timestamp_column) = DATE('now', '-1 day');
+    WHERE timestamp_column < strftime('%s', 'now') - 86400
   `;
 
+  let addresses;
   try {
     const rows = await dbAllAsync(query);
-    console.log('Addresses one day older:', rows);
+    addresses = rows.map(row => row.collection_address);
   } catch (err) {
     console.error('Error querying the database:', err);
   } finally {
     db.close();
   }
+
+  return addresses;
 }
 
 module.exports = { dbUsersFilePath, dbCollectionsFilePath, createUsersDatabase, dbAddressExists, dbAddressInsert, dbGetUserAddresses, dbAddressDelete, dbUpdateAddressApprovals, createNFTCollectionDatabase, dbNewCollectionInsert, getCollectionAddressesOneDayOlder };
