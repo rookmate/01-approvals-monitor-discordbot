@@ -142,15 +142,14 @@ async function getUserExposedNFTs(userAddress, userOpenApprovals) {
   });
 }
 
-async function getUserExposedCollectionNames(userExposedNFTs) {
+async function getUserExposedCollections(userExposedNFTs) {
   return new Promise(async (resolve, reject) => {
     const exposedCollectionsSet = new Set();
     const userExposedCollections = userExposedNFTs.map(collection => {
       const { address } = collection.contract;
-      const name = collection.contract.openSeaMetadata.collectionName;
       if (!exposedCollectionsSet.has(address)) {
         exposedCollectionsSet.add(address);
-        return { name, address };
+        return address.toLowerCase();
       }
 
       return null;
@@ -170,9 +169,10 @@ async function getFloorData(contractAddresses) {
       const currentBatch = contractAddresses.slice(i, endIndex);
       const response = await sdk.getCollectionsV7({ contract: currentBatch, accept: '*/*' });
       const parsedData = response.data.collections.map(collection => ({
-        address: collection.id.toLowerCase(),
-        price: collection.floorAsk.price.amount.decimal,
-        symbol: collection.floorAsk.price.currency.symbol,
+        "address": collection.id.toLowerCase(),
+        "name": collection.name,
+        "price": collection.floorAsk.price.amount.decimal,
+        "symbol": collection.floorAsk.price.currency.symbol,
       }));
 
       updatedFloors.push(...parsedData);
@@ -184,4 +184,4 @@ async function getFloorData(contractAddresses) {
   }
 }
 
-module.exports = { isValidEthereumAddress, getUserOwnedAllowedNFTs, getUserOpenApprovalForAllLogs, getUserExposedNFTs, getUserExposedCollectionNames, getFloorData }
+module.exports = { isValidEthereumAddress, getUserOwnedAllowedNFTs, getUserOpenApprovalForAllLogs, getUserExposedNFTs, getUserExposedCollections, getFloorData }

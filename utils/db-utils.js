@@ -167,7 +167,39 @@ async function dbUpdateAddressApprovals(rowId, latestBlock, approvals) {
       }
     });
 
+    db.close();
     resolve();
+  });
+}
+
+async function dbUpdateInWallet(rowId, userOpenApprovals, userExposedNFTs, userExposedCollections) {
+  return new Promise((resolve, reject) => {
+    const db = new sqlite3.Database(dbUsersFilePath);
+    const userOpenApprovalsSet = new Set();
+    const approvalSet = userOpenApprovals.map(event => {
+      const address = event.address.toLowerCase();
+      if (!userOpenApprovalsSet.has(address)) {
+        userOpenApprovalsSet.add(address);
+        return address;
+      }
+
+      return null;
+    }).filter(item => item !== null);
+
+    const filtered = approvalSet.filter((approval) => userExposedCollections.includes(approval.toLowerCase()));
+    const inwallet = {"inwallet": userExposedCollections, "others": filtered, "total_nfts": userExposedNFTs.length};
+    const jsonInWallet = JSON.stringify(inwallet);
+
+    db.run("UPDATE users SET inwallet_approvals = ? WHERE id = ?", [jsonInWallet, rowId], (err) => {
+      if (err) {
+        console.error(err.message);
+        db.close();
+        reject(new Error('Internal DB error. Please reach out to a moderator.'));
+      }
+    });
+
+    db.close();
+    resolve(approvalSet);
   });
 }
 
@@ -202,14 +234,8 @@ async function dbNewCollectionInsert(userExposedCollections) {
     const db = new sqlite3.Database(dbCollectionsFilePath);
 
     const stmt = db.prepare('INSERT OR IGNORE INTO nftcollections (collection_address, collection_name, floor_price, symbol) VALUES (?, ?, ?, ?)');
-    userExposedCollections.forEach(collection => {
-      if (collection.name && collection.address) {
-        stmt.run(collection.address.toLowerCase(), collection.name, "", "");
-      }
-    });
-
+    userExposedCollections.forEach(address => stmt.run(address.toLowerCase(), "", "", ""));
     stmt.finalize((err) => {
-
       if (err) {
         db.close();
         console.error(err.message);
@@ -250,13 +276,15 @@ async function getCollectionAddressesOneDayOlder() {
   return addresses;
 }
 
-async function dbUpdateCollectionFloors(updatedFloors) {
+async function dbUpdateCollections(updatedFloors) {
   const db = new sqlite3.Database(dbCollectionsFilePath);
   const dbRunAsync = util.promisify(db.run).bind(db);
 
   try {
     for (const collection of updatedFloors) {
-      await dbRunAsync("UPDATE nftcollections SET floor_price = ?, symbol = ?, timestamp_column = strftime('%s', 'now') WHERE collection_address = ?", [collection.price.toString(), collection.symbol, collection.address]);
+      await dbRunAsync("UPDATE nftcollections SET collection_name = ?, floor_price = ?, symbol = ?, timestamp_column = strftime('%s', 'now') WHERE collection_address = ?",
+        [collection.name, collection.price.toString(), collection.symbol, collection.address]
+      );
     }
   } catch (err) {
     console.error(err.message);
@@ -266,4 +294,4 @@ async function dbUpdateCollectionFloors(updatedFloors) {
   }
 }
 
-module.exports = { dbUsersFilePath, dbCollectionsFilePath, createUsersDatabase, dbAddressExists, dbAddressInsert, dbGetUserAddresses, dbAddressDelete, dbUpdateAddressApprovals, createNFTCollectionDatabase, dbNewCollectionInsert, getCollectionAddressesOneDayOlder, dbUpdateCollectionFloors };
+module.exports = { dbUsersFilePath, dbCollectionsFilePath, createUsersDatabase, dbAddressExists, dbAddressInsert, dbGetUserAddresses, dbAddressDelete, dbUpdateAddressApprovals, dbUpdateInWallet, createNFTCollectionDatabase, dbNewCollectionInsert, getCollectionAddressesOneDayOlder, dbUpdateCollections };

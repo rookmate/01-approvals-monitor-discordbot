@@ -1,8 +1,8 @@
 require('dotenv').config();
 const sqlite3 = require('sqlite3');
 const util = require('util');
-const { dbUsersFilePath, dbUpdateAddressApprovals, dbNewCollectionInsert, getCollectionAddressesOneDayOlder, dbUpdateCollectionFloors } = require('./db-utils');
-const { getUserOwnedAllowedNFTs, getUserOpenApprovalForAllLogs, getUserExposedNFTs, getUserExposedCollectionNames, getFloorData } = require('./wallet-utils');
+const { dbUsersFilePath, dbUpdateAddressApprovals, dbNewCollectionInsert, getCollectionAddressesOneDayOlder, dbUpdateCollections, dbUpdateInWallet } = require('./db-utils');
+const { getUserOwnedAllowedNFTs, getUserOpenApprovalForAllLogs, getUserExposedNFTs, getUserExposedCollections, getFloorData } = require('./wallet-utils');
 
 async function monitoringLoop() {
   const db = new sqlite3.Database(dbUsersFilePath);
@@ -48,17 +48,25 @@ async function monitoringLoop() {
         await dbUpdateAddressApprovals(row.id, latestBlock, openApprovals);
       } catch (error) {
         console.error('dbUpdateAddressApprovals:', error.message);
-        interaction.reply({ content: error.message, ephemeral: true });
         return;
       }
 
       console.log(`Get contract names for each contract that the user has open approvals on`);
       const userExposedNFTs = await getUserExposedNFTs(row.address, openApprovals);
-      const userExposedCollections = await getUserExposedCollectionNames(userExposedNFTs);
-      console.log(`Collected ${openApprovals.length} open approvals on ${row.address} of which ${userExposedCollections.length} exposed NFT collections and ${userExposedNFTs.length} NFTs`);
+      const userExposedCollections = await getUserExposedCollections(userExposedNFTs);
+      console.log(`Collected ${openApprovals.length} open approvals for all on ${row.address} of which ${userExposedCollections.length} exposed NFT collections and ${userExposedNFTs.length} NFTs`);
+
+      let approvalSet;
+      try {
+        approvalSet = await dbUpdateInWallet(row.id, openApprovals, userExposedNFTs, userExposedCollections);
+      }  catch (error) {
+        console.error('dbUpdateInWallet:', error.message);
+        return;
+      }
+
       try {
         console.log(`Update collections that need monitoring`);
-        await dbNewCollectionInsert(userExposedCollections);
+        await dbNewCollectionInsert(approvalSet);
       }  catch (error) {
         console.error('dbCollectionInsert:', error.message);
         return;
@@ -84,9 +92,9 @@ async function monitoringLoop() {
 
       console.log(`Update all floors on DB collections`);
       try {
-        await dbUpdateCollectionFloors(updatedFloors);
+        await dbUpdateCollections(updatedFloors);
       }  catch (error) {
-        console.error('dbUpdateCollectionFloors:', error.message);
+        console.error('dbUpdateCollections:', error.message);
         return;
       }
     }
