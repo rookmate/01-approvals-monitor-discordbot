@@ -109,19 +109,12 @@ async function monitoringLoop() {
 async function notifyUsers(client) {
   const usersDb = new sqlite3.Database(dbUsersFilePath);
   const allUsersAsync = util.promisify(usersDb.all).bind(usersDb);
-  const collectionsDb = new sqlite3.Database(dbCollectionsFilePath);
-  const allCollectionsAsync = util.promisify(collectionsDb.all).bind(collectionsDb);
 
   try {
     const userRows = await allUsersAsync('SELECT * FROM users');
 
     for (const row of userRows) {
-      const collectionAddressesString = "'" + JSON.parse(row.inwallet_approvals).inwallet.join("','") + "'";
-      const exposedCollections = await allCollectionsAsync(`SELECT * FROM nftcollections WHERE collection_address IN (${collectionAddressesString})`);
-      const otherAddressesString = "'" + JSON.parse(row.inwallet_approvals).others.join("','") + "'";
-      const exposedOthers = await allCollectionsAsync(`SELECT * FROM nftcollections WHERE collection_address IN (${otherAddressesString})`);
-
-      const embed = await buildEmbed(row, exposedCollections, exposedOthers);
+      const embed = await buildEmbed(row);
       const user = await client.users.fetch(row.discord_id);
       await user.send(embed);
     }
@@ -132,38 +125,59 @@ async function notifyUsers(client) {
   }
 }
 
-async function buildEmbed(row, exposedCollections, exposedOthers) {
+async function buildEmbed(row) {
+  const openApprovals = JSON.parse(row.current_approvals) ?? '{}';
+  const { inwallet = [], others = [], total_nfts = 0 } = JSON.parse(row.inwallet_approvals) ?? {};
+
+  const collectionsDb = new sqlite3.Database(dbCollectionsFilePath);
+  const allCollectionsAsync = util.promisify(collectionsDb.all).bind(collectionsDb);
+
+  const collectionAddressesString = "'" + inwallet.join("','") + "'";
+  const exposedCollections = await allCollectionsAsync(`SELECT * FROM nftcollections WHERE collection_address IN (${collectionAddressesString})`);
+  const otherAddressesString = "'" + others.join("','") + "'";
+  const exposedOthers = await allCollectionsAsync(`SELECT * FROM nftcollections WHERE collection_address IN (${otherAddressesString})`);
+
   const embedMessage = new EmbedBuilder()
     .setAuthor({ name: `${row.address}` })
-    .setTitle(`Has ${JSON.parse(row.current_approvals).length} open Approvals For All`)
-    .setDescription(`${JSON.parse(row.inwallet_approvals).total_nfts} NFTs exposed on ${JSON.parse(row.inwallet_approvals).inwallet.length} NFT collections`)
-    .setFooter({ text: 'Report powered by Approvals Monitor', iconURL: 'https://i.imgur.com/0J7aBXD.jpeg' });
+    .setTitle(`Has ${openApprovals.length ?? 0} open Approvals For All`)
+    .setDescription(`${total_nfts} NFTs exposed on ${inwallet.length} NFT collections`)
+    .setFooter({ text: 'Weekly report by Approvals Monitor', iconURL: 'https://i.imgur.com/0J7aBXD.jpeg' });
 
-  embedMessage.addFields({ name: 'Exposed NFT in collections', value: ' ' });
-  for (const collection of exposedCollections) {
+  if (exposedCollections.length !== 0) {
     embedMessage.addFields(
-      { name: ' ', value: `[${collection.collection_name}](https://etherscan.io/address/${collection.collection_address})\nValue exposed: ${collection.floor_price} ${collection.symbol}`, inline: true },
+      { name: '\u200B', value: ' ' },
+      { name: ':rotating_light: Exposed NFT in collections :rotating_light:', value: ' ' }
     );
-  }
-
-  embedMessage.addFields({ name: '\u200B', value: '\u200B' });
-  embedMessage.addFields({ name: 'Other collections with open approvals', value: ' ' });
-  for (const collection of exposedOthers) {
-    embedMessage.addFields(
-      { name: ' ', value: `[${collection.collection_name}](https://etherscan.io/address/${collection.collection_address})\nValue exposed: ${collection.floor_price} ${collection.symbol}`, inline: true },
-    );
-  }
-
-  if (JSON.parse(row.current_approvals).length === 0) {
-    embedMessage.setColor(0x0FFF50);
-  } else {
-    if (JSON.parse(row.inwallet_approvals).inwallet.length / JSON.parse(row.current_approvals).length < 0.5) {
-      embedMessage.setColor(0xFF3131);
-    } else {
-      embedMessage.setColor(0xFF5F1F);
+    for (const collection of exposedCollections) {
+      embedMessage.addFields(
+        { name: ' ', value: `[${collection.collection_name}](https://etherscan.io/address/${collection.collection_address})\nValue exposed: ${collection.floor_price} ${collection.symbol}`},
+      );
     }
   }
 
+  if (exposedOthers.length !== 0) {
+    embedMessage.addFields(
+      { name: '\u200B', value: ' ' },
+      { name: ':mag_right: Other collections with open approvals :mag_right:', value: ' ' }
+    );
+    for (const collection of exposedOthers) {
+      embedMessage.addFields(
+        { name: ' ', value: `[${collection.collection_name}](https://etherscan.io/address/${collection.collection_address})`, inline: true },
+      );
+    }
+  }
+
+  if ((openApprovals.length ?? 0) === 0) {
+    embedMessage.setColor(0x0FFF50);
+  } else {
+    if (inwallet.length / openApprovals.length <= 0.5) {
+      embedMessage.setColor(0xFF5F1F);
+    } else {
+      embedMessage.setColor(0xFF3131);
+    }
+  }
+
+  collectionsDb.close();
   return { embeds: [embedMessage] };
 }
 
