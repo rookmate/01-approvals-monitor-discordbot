@@ -282,7 +282,14 @@ async function dbUpdateCollections(updatedFloors) {
 
   try {
     for (const collection of updatedFloors) {
-      await dbRunAsync("UPDATE nftcollections SET collection_name = ?, floor_price = ?, symbol = ?, timestamp_column = strftime('%s', 'now') WHERE collection_address = ?",
+      await dbRunAsync(`
+        UPDATE nftcollections
+        SET
+          collection_name = CASE WHEN collection_name = '' THEN ? ELSE collection_name END,
+          floor_price = ?,
+          symbol = ?,
+          timestamp_column = strftime('%s', 'now')
+        WHERE collection_address = ?`,
         [collection.name, collection.price.toString(), collection.symbol, collection.address]
       );
     }
