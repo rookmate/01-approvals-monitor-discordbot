@@ -186,17 +186,11 @@ async function dbUpdateInWallet(rowId, userOpenApprovals, userExposedNFTs, userE
       return null;
     }).filter(item => item !== null);
 
-    const filtered = approvalSet.filter((approval) => userExposedCollections.includes(approval.toLowerCase()));
+    const filtered = approvalSet.filter((approval) => !userExposedCollections.includes(approval.toLowerCase()));
     const inwallet = {"inwallet": userExposedCollections, "others": filtered, "total_nfts": userExposedNFTs.length};
     const jsonInWallet = JSON.stringify(inwallet);
 
-    db.run("UPDATE users SET inwallet_approvals = ? WHERE id = ?", [jsonInWallet, rowId], (err) => {
-      if (err) {
-        console.error(err.message);
-        db.close();
-        reject(new Error('Internal DB error. Please reach out to a moderator.'));
-      }
-    });
+    db.run("UPDATE users SET inwallet_approvals = ? WHERE id = ?", [jsonInWallet, rowId]);
 
     db.close();
     resolve(approvalSet);
