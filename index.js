@@ -12,14 +12,12 @@ client.commands = cmdParser('set', client.commands);
 client.once(Events.ClientReady, readyClient => {
   db.createUsersDatabase();
   db.createNFTCollectionDatabase();
-  cron.schedule('*/1 * * * *', async () => {
-  // cron.schedule('0 0 * * 0', async () => {
-    // await monitoringLoop()
-    //   .then(() => console.log('Finished monitoring loop'))
-    //   .catch(() => 'Error performing scheduled tasks', error);
-    await notifyUsers(client)
-      .then(() => console.log('Finished notifying users'))
-      .catch(() => 'Error notifying users', error);
+  // cron.schedule('*/1 * * * *', async () => {
+  cron.schedule('0 0 * * 0', async () => {
+    await monitoringLoop();
+    console.log('Finished monitoring loop');
+    await notifyUsers(client);
+    console.log('Finished notifying users');
   }, {
     timezone: 'UTC'
   });

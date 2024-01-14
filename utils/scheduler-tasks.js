@@ -4,13 +4,14 @@ const sqlite3 = require('sqlite3');
 const util = require('util');
 const { dbUsersFilePath, dbUpdateAddressApprovals, dbNewCollectionInsert, getCollectionAddressesOneDayOlder, dbUpdateCollections, dbUpdateInWallet, dbCollectionsFilePath } = require('./db-utils');
 const { getUserOwnedAllowedNFTs, getUserOpenApprovalForAllLogs, getUserExposedNFTs, getUserExposedCollections, getFloorData } = require('./wallet-utils');
+const { resolve } = require('path');
 
 async function monitoringLoop() {
   const db = new sqlite3.Database(dbUsersFilePath);
   const allAsync = util.promisify(db.all).bind(db);
 
   try {
-    console.log(`Looping all DB entries`);
+    console.log(`Monitoring Loop: Looping all DB entries`);
     const rows = await allAsync('SELECT * FROM users');
 
     console.log(`Checking if users still have the allowed NFTs on the wallets, otherwise remove entry from DB`);
@@ -103,6 +104,7 @@ async function monitoringLoop() {
     console.error('Error fetching data or updating database:', error);
   } finally {
     db.close();
+    resolve();
   }
 }
 
@@ -111,6 +113,7 @@ async function notifyUsers(client) {
   const allUsersAsync = util.promisify(usersDb.all).bind(usersDb);
 
   try {
+    console.log(`Notifying users: Looping all DB entries`);
     const userRows = await allUsersAsync('SELECT * FROM users');
 
     for (const row of userRows) {
@@ -122,6 +125,7 @@ async function notifyUsers(client) {
     console.error('Error fetching data or updating database:', error);
   } finally {
     usersDb.close();
+    resolve();
   }
 }
 
