@@ -1,4 +1,5 @@
 require('dotenv').config();
+const { EmbedBuilder } = require('discord.js');
 const sqlite3 = require('sqlite3');
 const util = require('util');
 const { dbUsersFilePath, dbUpdateAddressApprovals, dbNewCollectionInsert, getCollectionAddressesOneDayOlder, dbUpdateCollections, dbUpdateInWallet, dbCollectionsFilePath } = require('./db-utils');
@@ -115,20 +116,55 @@ async function notifyUsers(client) {
     const userRows = await allUsersAsync('SELECT * FROM users');
 
     for (const row of userRows) {
-      console.log(row)
       const collectionAddressesString = "'" + JSON.parse(row.inwallet_approvals).inwallet.join("','") + "'";
-      const rows = await allCollectionsAsync(`SELECT * FROM nftcollections WHERE collection_address IN (${collectionAddressesString})`);
-      console.log(rows);
-      const message = `Collected ${JSON.parse(row.current_approvals).length} open approvals on ${row.address} of which ${JSON.parse(row.inwallet_approvals).inwallet.length} exposed NFT collections and ${JSON.parse(row.inwallet_approvals).total_nfts} NFTs`;
-      console.log(message);
-      // const user = await client.users.fetch(row.discord_id);
-      // await user.send(message);
+      const exposedCollections = await allCollectionsAsync(`SELECT * FROM nftcollections WHERE collection_address IN (${collectionAddressesString})`);
+      const otherAddressesString = "'" + JSON.parse(row.inwallet_approvals).others.join("','") + "'";
+      const exposedOthers = await allCollectionsAsync(`SELECT * FROM nftcollections WHERE collection_address IN (${otherAddressesString})`);
+
+      const embed = await buildEmbed(row, exposedCollections, exposedOthers);
+      const user = await client.users.fetch(row.discord_id);
+      await user.send(embed);
     }
   } catch (error) {
     console.error('Error fetching data or updating database:', error);
   } finally {
     usersDb.close();
   }
+}
+
+async function buildEmbed(row, exposedCollections, exposedOthers) {
+  const embedMessage = new EmbedBuilder()
+    .setAuthor({ name: `${row.address}` })
+    .setTitle(`Has ${JSON.parse(row.current_approvals).length} open Approvals For All`)
+    .setDescription(`${JSON.parse(row.inwallet_approvals).total_nfts} NFTs exposed on ${JSON.parse(row.inwallet_approvals).inwallet.length} NFT collections`)
+    .setFooter({ text: 'Report powered by Approvals Monitor', iconURL: 'https://i.imgur.com/0J7aBXD.jpeg' });
+
+  embedMessage.addFields({ name: 'Exposed NFT in collections', value: ' ' });
+  for (const collection of exposedCollections) {
+    embedMessage.addFields(
+      { name: ' ', value: `[${collection.collection_name}](https://etherscan.io/address/${collection.collection_address})\nValue exposed: ${collection.floor_price} ${collection.symbol}`, inline: true },
+    );
+  }
+
+  embedMessage.addFields({ name: '\u200B', value: '\u200B' });
+  embedMessage.addFields({ name: 'Other collections with open approvals', value: ' ' });
+  for (const collection of exposedOthers) {
+    embedMessage.addFields(
+      { name: ' ', value: `[${collection.collection_name}](https://etherscan.io/address/${collection.collection_address})\nValue exposed: ${collection.floor_price} ${collection.symbol}`, inline: true },
+    );
+  }
+
+  if (JSON.parse(row.current_approvals).length === 0) {
+    embedMessage.setColor(0x0FFF50);
+  } else {
+    if (JSON.parse(row.inwallet_approvals).inwallet.length / JSON.parse(row.current_approvals).length < 0.5) {
+      embedMessage.setColor(0xFF3131);
+    } else {
+      embedMessage.setColor(0xFF5F1F);
+    }
+  }
+
+  return { embeds: [embedMessage] };
 }
 
 module.exports = { monitoringLoop, notifyUsers };
