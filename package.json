@@ -4,6 +4,8 @@
   "description": "A bot to monitor user wallet permissions",
   "main": "index.js",
   "scripts": {
+    "google": "node index.js --google",
+    "run": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "rookmate",

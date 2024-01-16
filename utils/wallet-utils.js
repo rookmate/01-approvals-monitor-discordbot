@@ -5,17 +5,6 @@ const { Alchemy, Network } = require("alchemy-sdk");
 require('dotenv').config();
 const sdk = require('api')('@reservoirprotocol/v3.0#j7ej3alr9o3etb');
 
-const chains = {
-  "ethereum": {
-    rpcEndpoint: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ETH_ALCHEMY_KEY}`,
-    chain: mainnet
-  },
-  "polygon": {
-    rpcEndpoint: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.POLYGON_ALCHEMY_KEY}`,
-    chain: polygon
-  }
-};
-
 function isValidEthereumAddress(address) {
   // Check if the address matches the Ethereum address format
   const addressRegex = /^(0x)?[0-9a-fA-F]{40}$/;
@@ -27,19 +16,27 @@ function isValidEthereumAddress(address) {
   return isAddress(address);
 }
 
+async function getChains() {
+  return {
+    "ethereum": {
+      rpcEndpoint: process.argv.includes('--google')
+        ? `https://eth-mainnet.g.alchemy.com/v2/${await accessSecret(['ETH_ALCHEMY_KEY'])}`
+        : `https://eth-mainnet.g.alchemy.com/v2/${process.env.ETH_ALCHEMY_KEY}`,
+      chain: mainnet
+    },
+    "polygon": {
+      rpcEndpoint: process.argv.includes('--google')
+        ? `https://polygon-mainnet.g.alchemy.com/v2/${await accessSecret(['POLYGON_ALCHEMY_KEY'])}`
+        : `https://polygon-mainnet.g.alchemy.com/v2/${process.env.POLYGON_ALCHEMY_KEY}`,
+      chain: polygon
+    }
+  };
+}
+
 function getUserOwnedAllowedNFTs(userAddress) {
   return new Promise(async (resolve, reject) => {
     let userOwnedNFTs = { "total": 0n };
-    const chains = {
-      "ethereum": {
-        rpcEndpoint: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ETH_ALCHEMY_KEY}`,
-        chain: mainnet
-      },
-      "polygon": {
-        rpcEndpoint: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.POLYGON_ALCHEMY_KEY}`,
-        chain: polygon
-      }
-    };
+    const chains = await getChains();
 
     for (const nft of ALLOWED_NFTS) {
       const rpc = chains[nft.chain].rpcEndpoint;
@@ -69,6 +66,8 @@ function getUserOwnedAllowedNFTs(userAddress) {
 
 async function getUserOpenApprovalForAllLogs(blockchain, userAddress, latestBlock, current_approvals) {
   return new Promise(async (resolve, reject) => {
+    const chains = await getChains();
+
     const rpc = chains[blockchain].rpcEndpoint;
     if (!rpc) {
       console.error(`Invalid or unsupported chain: ${blockchain}`);
@@ -117,8 +116,12 @@ async function getUserOpenApprovalForAllLogs(blockchain, userAddress, latestBloc
 
 async function getUserExposedNFTs(userAddress, userOpenApprovals) {
   return new Promise(async (resolve, reject) => {
+    const key = process.argv.includes('--google')
+      ? await accessSecrets(['ETH_ALCHEMY_KEY'])
+      : `${process.env.ETH_ALCHEMY_KEY}`;
+
     const config = {
-      apiKey: `${process.env.ETH_ALCHEMY_KEY}`,
+      apiKey: key,
       network: Network.ETH_MAINNET,
     };
 
@@ -161,8 +164,11 @@ async function getUserExposedCollections(userExposedNFTs) {
 
 async function getFloorData(contractAddresses) {
   try {
-    await sdk.auth(`${process.env.RESERVOIR_KEY}`);
-    const batchSize = 50; // can only list up to 50 addresses for getCollectionsV7 from reservoir API
+    const key = process.argv.includes('--google')
+      ? await accessSecrets(['RESERVOIR_KEY'])
+      : `${process.env.RESERVOIR_KEY}`;
+    await sdk.auth(key);
+    const batchSize = 20; // can only list up to 50 addresses for getCollectionsV7 from reservoir API
     let updatedFloors = [];
     for (let i = 0; i < contractAddresses.length; i += batchSize) {
       const endIndex = Math.min(i + batchSize, contractAddresses.length);

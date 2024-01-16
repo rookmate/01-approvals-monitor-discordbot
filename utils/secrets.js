@@ -17,4 +17,4 @@ async function accessSecrets(secrets) {
   }
 }
 
-modules.exports = accessSecrets;  
+module.exports = accessSecrets;
