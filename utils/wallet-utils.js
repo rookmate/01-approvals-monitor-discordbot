@@ -20,13 +20,13 @@ async function getChains() {
   return {
     "ethereum": {
       rpcEndpoint: process.argv.includes('--google')
-        ? `https://eth-mainnet.g.alchemy.com/v2/${await accessSecret(['ETH_ALCHEMY_KEY'])}`
+        ? `https://eth-mainnet.g.alchemy.com/v2/${(await accessSecret(['ETH_ALCHEMY_KEY']))[0]}`
         : `https://eth-mainnet.g.alchemy.com/v2/${process.env.ETH_ALCHEMY_KEY}`,
       chain: mainnet
     },
     "polygon": {
       rpcEndpoint: process.argv.includes('--google')
-        ? `https://polygon-mainnet.g.alchemy.com/v2/${await accessSecret(['POLYGON_ALCHEMY_KEY'])}`
+        ? `https://polygon-mainnet.g.alchemy.com/v2/${(await accessSecret(['POLYGON_ALCHEMY_KEY']))[0]}`
         : `https://polygon-mainnet.g.alchemy.com/v2/${process.env.POLYGON_ALCHEMY_KEY}`,
       chain: polygon
     }
@@ -117,7 +117,7 @@ async function getUserOpenApprovalForAllLogs(blockchain, userAddress, latestBloc
 async function getUserExposedNFTs(userAddress, userOpenApprovals) {
   return new Promise(async (resolve, reject) => {
     const key = process.argv.includes('--google')
-      ? await accessSecrets(['ETH_ALCHEMY_KEY'])
+      ? (await accessSecrets(['ETH_ALCHEMY_KEY'])[0])
       : `${process.env.ETH_ALCHEMY_KEY}`;
 
     const config = {
@@ -165,7 +165,7 @@ async function getUserExposedCollections(userExposedNFTs) {
 async function getFloorData(contractAddresses) {
   try {
     const key = process.argv.includes('--google')
-      ? await accessSecrets(['RESERVOIR_KEY'])
+      ? (await accessSecrets(['RESERVOIR_KEY']))[0]
       : `${process.env.RESERVOIR_KEY}`;
     await sdk.auth(key);
     const batchSize = 20; // can only list up to 50 addresses for getCollectionsV7 from reservoir API

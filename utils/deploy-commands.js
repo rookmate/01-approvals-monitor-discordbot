@@ -8,7 +8,7 @@ async function deploy() {
   const commands = cmdParser('deploy', []);
 
   const key = process.argv.includes('--google')
-    ? await accessSecrets(['DISCORD_TOKEN'])
+    ? (await accessSecrets(['DISCORD_TOKEN']))[0]
     : `${process.env.DISCORD_TOKEN}`;
 
   const rest = new REST().setToken(key);

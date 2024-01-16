@@ -48,7 +48,7 @@ async function startBot() {
   });
 
   const discordToken = process.argv.includes('--google')
-    ? await accessSecrets(['DISCORD_TOKEN'])
+    ? (await accessSecrets(['DISCORD_TOKEN']))[0]
     : process.env.DISCORD_TOKEN;
   client.login(discordToken);
 }
