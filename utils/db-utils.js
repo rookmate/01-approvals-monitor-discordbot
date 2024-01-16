@@ -1,4 +1,4 @@
-const sqlite3 = require('sqlite3');
+const sqlite3 = require('sqlite3').verbose;
 const path = require('path');
 const fs = require('fs');
 const util = require('util');
@@ -12,7 +12,7 @@ function createUsersDatabase() {
     const db = new sqlite3.Database(dbUsersFilePath);
 
     db.serialize(() => {
-      db.run('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, discord_id TEXT, address TEXT, allowed_nfts TEXT, latest_block INTEGER, current_approvals TEXT)', (err) => {
+      db.run('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, discord_id TEXT, address TEXT, allowed_nfts TEXT, latest_block INTEGER, current_approvals TEXT inwallet_approvals TEXT)', (err) => {
         if (err) {
           console.error('Error creating the table:', err);
         }
@@ -54,14 +54,14 @@ async function dbAddressInsert(interaction, userAddress, userOwnedNFTs) {
   return new Promise((resolve, reject) => {
     const db = new sqlite3.Database(dbUsersFilePath);
 
-    const stmt = db.prepare('INSERT INTO users (discord_id, address, allowed_nfts, latest_block, current_approvals) VALUES (?, ?, ?, ?, ?)');
+    const stmt = db.prepare('INSERT INTO users (discord_id, address, allowed_nfts, latest_block, current_approvals, inwallet_approvals) VALUES (?, ?, ?, ?, ?, ?)');
     const jsonUserOwnedNFTs = JSON.stringify(userOwnedNFTs, (key, value) => {
       if (typeof value === 'bigint') {
         return value.toString();
       }
       return value;
     });
-    stmt.run(interaction.user.id, userAddress.toLowerCase(),  jsonUserOwnedNFTs, 0n.toString(),  JSON.stringify([]), (err) => {
+    stmt.run(interaction.user.id, userAddress.toLowerCase(),  jsonUserOwnedNFTs, 0n.toString(),  JSON.stringify([]), JSON.stringify({}), (err) => {
       stmt.finalize();
 
       if (err) {
