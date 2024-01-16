@@ -4,6 +4,7 @@ const { mainnet, polygon } = require('viem/chains');
 const { Alchemy, Network } = require("alchemy-sdk");
 require('dotenv').config();
 const sdk = require('api')('@reservoirprotocol/v3.0#j7ej3alr9o3etb');
+const accessSecrets = require('./secrets');
 
 function isValidEthereumAddress(address) {
   // Check if the address matches the Ethereum address format
@@ -20,13 +21,13 @@ async function getChains() {
   return {
     "ethereum": {
       rpcEndpoint: process.argv.includes('--google')
-        ? `https://eth-mainnet.g.alchemy.com/v2/${(await accessSecret(['ETH_ALCHEMY_KEY']))[0]}`
+        ? `https://eth-mainnet.g.alchemy.com/v2/${(await accessSecrets(['ETH_ALCHEMY_KEY']))[0]}`
         : `https://eth-mainnet.g.alchemy.com/v2/${process.env.ETH_ALCHEMY_KEY}`,
       chain: mainnet
     },
     "polygon": {
       rpcEndpoint: process.argv.includes('--google')
-        ? `https://polygon-mainnet.g.alchemy.com/v2/${(await accessSecret(['POLYGON_ALCHEMY_KEY']))[0]}`
+        ? `https://polygon-mainnet.g.alchemy.com/v2/${(await accessSecrets(['POLYGON_ALCHEMY_KEY']))[0]}`
         : `https://polygon-mainnet.g.alchemy.com/v2/${process.env.POLYGON_ALCHEMY_KEY}`,
       chain: polygon
     }

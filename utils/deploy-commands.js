@@ -2,7 +2,7 @@ const { REST, Routes } = require('discord.js');
 require('dotenv').config();
 const constants = require("./constants");
 const cmdParser = require("./command-parser");
-
+const accessSecrets = require('./secrets');
 
 async function deploy() {
   const commands = cmdParser('deploy', []);
