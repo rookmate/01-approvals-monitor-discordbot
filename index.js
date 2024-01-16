@@ -14,8 +14,8 @@ async function startBot() {
   client.once(Events.ClientReady, readyClient => {
     db.createUsersDatabase();
     db.createNFTCollectionDatabase();
-    cron.schedule('*/1 * * * *', async () => {
-    // cron.schedule('0 0 * * 0', async () => {
+    //cron.schedule('*/1 * * * *', async () => {
+    cron.schedule('0 0 * * 0', async () => {
       await monitoringLoop();
       console.log('Finished monitoring loop');
       await notifyUsers(client);
