@@ -12,7 +12,7 @@ function createUsersDatabase() {
     const db = new sqlite3.Database(dbUsersFilePath);
 
     db.serialize(() => {
-      db.run('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, discord_id TEXT, address TEXT, allowed_nfts TEXT, latest_block INTEGER, current_approvals TEXT inwallet_approvals TEXT)', (err) => {
+      db.run('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, discord_id TEXT, address TEXT, allowed_nfts TEXT, latest_block INTEGER, current_approvals TEXT, inwallet_approvals TEXT)', (err) => {
         if (err) {
           console.error('Error creating the table:', err);
         }
