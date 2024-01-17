@@ -9,21 +9,22 @@ module.exports = {
   .setDescription('Lists all user wallets on Aprovals Monitor bot.'),
 
   async execute(interaction) {
+    await interaction.reply({content: `Processing request...`, ephemeral: true});
     console.log(`Checking if user has role permissions`);
     const matchingRoles = Object.entries(ALLOWED_ROLES).filter(([key, value]) =>
       Array.from(interaction.member.roles.cache.keys()).includes(value)
     );
     if (matchingRoles.length === 0) {
-      await interaction.reply({content: `You do not have permissions to run this command`, ephemeral: true});
+      await interaction.editReply({content: `You do not have permissions to run this command`, ephemeral: true});
       return;
     }
 
     console.log(`Listing all user wallets on Approvals Monitor`);
     try {
       const result = await dbGetUserAddresses(interaction);
-      interaction.reply(result);
+      interaction.editReply(result);
     } catch (error) {
-      interaction.reply(error);
+      interaction.editReply(error);
     }
   },
 };

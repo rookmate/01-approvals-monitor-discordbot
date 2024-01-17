@@ -16,29 +16,30 @@ module.exports = {
   ),
 
   async execute(interaction) {
+    await interaction.reply({content: `Processing request...`, ephemeral: true});
     console.log(`Checking if user has role permissions`);
     const matchingRoles = Object.entries(ALLOWED_ROLES).filter(([key, value]) =>
       Array.from(interaction.member.roles.cache.keys()).includes(value)
     );
     if (matchingRoles.length === 0) {
-      await interaction.reply({content: `You do not have permissions to run this command`, ephemeral: true});
+      await interaction.editReply({content: `You do not have permissions to run this command`, ephemeral: true});
       return;
     }
 
     console.log(`Validating if valid wallet address`);
     const userAddress = interaction.options.getString('address');
     if (!isValidEthereumAddress(userAddress)) {
-      await interaction.reply({content: `${userAddress} is not a valid Ethereum address`, ephemeral: true});
+      await interaction.editReply({content: `${userAddress} is not a valid Ethereum address`, ephemeral: true});
       return;
     }
 
     console.log(`Removing address from the database`);
     try {
       const result = await dbAddressDelete(interaction, userAddress);
-      interaction.reply(result);
+      interaction.editReply(result);
     } catch (error) {
       console.error('dbAddressDelete:', error.message);
-      interaction.reply({ content: error.message, ephemeral: true });
+      interaction.editReply({ content: error.message, ephemeral: true });
     }
   },
 };
