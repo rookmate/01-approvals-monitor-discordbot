@@ -50,7 +50,7 @@ async function dbAddressExists(userAddress) {
   });
 }
 
-async function dbAddressInsert(interaction, userAddress, userOwnedNFTs) {
+async function dbAddressInsert(userID, userAddress, userOwnedNFTs) {
   return new Promise((resolve, reject) => {
     const db = new sqlite3.Database(dbUsersFilePath);
 
@@ -61,7 +61,7 @@ async function dbAddressInsert(interaction, userAddress, userOwnedNFTs) {
       }
       return value;
     });
-    stmt.run(interaction.user.id, userAddress.toLowerCase(),  jsonUserOwnedNFTs, 0n.toString(),  JSON.stringify([]), JSON.stringify({}), (err) => {
+    stmt.run(userID, userAddress.toLowerCase(),  jsonUserOwnedNFTs, 0n.toString(),  JSON.stringify([]), JSON.stringify({}), (err) => {
       stmt.finalize();
 
       if (err) {
@@ -80,12 +80,12 @@ async function dbAddressInsert(interaction, userAddress, userOwnedNFTs) {
   });
 }
 
-async function dbGetUserAddresses(interaction) {
+async function dbGetUserAddresses(userID) {
   return new Promise((resolve, reject) => {
     const db = new sqlite3.Database(dbUsersFilePath);
     let wallets = [];
 
-    db.each('SELECT address FROM users WHERE discord_id = ?', [interaction.user.id], (err, row) => {
+    db.each('SELECT address FROM users WHERE discord_id = ?', [userID], (err, row) => {
       if (err) {
         reject(new Error('Internal DB error. Please reach out to a moderator.'));
         console.error(err.message);
@@ -120,11 +120,11 @@ async function dbGetUserAddresses(interaction) {
   });
 }
 
-async function dbAddressDelete(interaction, userAddress) {
+async function dbAddressDelete(userID, userAddress) {
   return new Promise((resolve, reject) => {
     const db = new sqlite3.Database(dbUsersFilePath);
 
-    db.run('DELETE FROM users WHERE address = ? AND discord_id = ?', [userAddress.toLowerCase(), interaction.user.id], function (err) {
+    db.run('DELETE FROM users WHERE address = ? AND discord_id = ?', [userAddress.toLowerCase(), userID], function (err) {
       if (err) {
         console.error(err.message);
         db.close();

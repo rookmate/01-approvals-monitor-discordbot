@@ -21,7 +21,7 @@ module.exports = {
 
     console.log(`Listing all user wallets on Approvals Monitor`);
     try {
-      const result = await dbGetUserAddresses(interaction);
+      const result = await dbGetUserAddresses(interaction.user.id);
       interaction.editReply(result);
     } catch (error) {
       interaction.editReply(error);

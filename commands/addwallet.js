@@ -75,7 +75,7 @@ module.exports = {
     if (isUserAddress) {
       console.log(`Adding wallet to alert system`);
       try {
-        const result = await dbAddressInsert(interaction, userAddress, userOwnedNFTs);
+        const result = await dbAddressInsert(interaction.user.id, userAddress, userOwnedNFTs);
         await interaction.editReply(result);
       } catch (error) {
         console.error('dbAddressInsert:', error.message);

@@ -35,7 +35,7 @@ module.exports = {
 
     console.log(`Removing address from the database`);
     try {
-      const result = await dbAddressDelete(interaction, userAddress);
+      const result = await dbAddressDelete(interaction.user.id, userAddress);
       interaction.editReply(result);
     } catch (error) {
       console.error('dbAddressDelete:', error.message);
