@@ -9,6 +9,7 @@ const { resolve } = require('path');
 async function monitoringLoop() {
   const db = new sqlite3.Database(dbUsersFilePath);
   const allAsync = util.promisify(db.all).bind(db);
+  const runAsync = util.promisify(db.run).bind(db);
 
   try {
     console.log(`Monitoring Loop: Looping all DB entries`);
@@ -19,18 +20,12 @@ async function monitoringLoop() {
       let userOwnedNFTs;
       try {
         userOwnedNFTs = await getUserOwnedAllowedNFTs(row.address);
-        if (userOwnedNFTs["total"] === 0n) {
-          db.run("DELETE FROM users WHERE address = ?", [row.address], (deleteErr) => {
-            if (deleteErr) {
-              console.error(deleteErr.message);
-            }
-          });
-          console.log(`Deleted ${row.address} as it no longer has access to the allowed NFTs`);
-          return;
+        if (userOwnedNFTs.total === 0n) {
+          await runAsync("DELETE FROM users WHERE address = ?", [row.address]);
+          console.log(`Deleted ${row.address} as it no longer has access to allowed NFTs`);
         }
       } catch (error) {
-          console.error('getUserOwnedAllowedNFTs:', error.message);
-          return;
+        console.error('getUserOwnedAllowedNFTs:', error.message);
       }
 
       console.log(`Check all open approvals based on ${row.address} last known block: ${row.latest_block} and fetch also ${JSON.parse(row.current_approvals).length} current_approvals`);
